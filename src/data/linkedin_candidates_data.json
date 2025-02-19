@@ -1,0 +1,65 @@
+[
+  {
+    "name": "Alice Chen",
+    "contact_info": {
+      "email": "alice.chen@example.com",
+      "phone": "555-123-4567",
+      "github": null,
+      "linkedin": "https://www.linkedin.com/in/alicechen"
+    },
+    "profile": {
+      "skills": [
+        "Natural Language Processing",
+        "Chatbots",
+        "Linguistic Analysis",
+        "Python",
+        "Communication",
+        "Copy Editing"
+      ],
+      "experience": "5 years",
+      "education": "Master of Science in Computer Science, Stanford University"
+    }
+  },
+  {
+    "name": "Bob Lee",
+    "contact_info": {
+      "email": "bob.lee@example.com",
+      "phone": "555-987-6543",
+      "github": "https://github.com/boblee",
+      "linkedin": "https://www.linkedin.com/in/boblee"
+    },
+    "profile": {
+      "skills": [
+        "Natural Language Processing",
+        "Machine Learning",
+        "User Experience",
+        "Java",
+        "Communication",
+        "Content Creation"
+      ],
+      "experience": "3 years",
+      "education": "Bachelor of Science in Computer Engineering, MIT"
+    }
+  },
+  {
+    "name": "Charlie Kim",
+    "contact_info": {
+      "email": "charlie.kim@example.com",
+      "phone": "555-555-5555",
+      "github": null,
+      "linkedin": "https://www.linkedin.com/in/charlie-kim"
+    },
+    "profile": {
+      "skills": [
+        "Natural Language Processing",
+        "Conversational AI",
+        "Chatbot Design",
+        "Data Analysis",
+        "Research",
+        "Communication"
+      ],
+      "experience": "7 years",
+      "education": "PhD in Linguistics, University of California, Berkeley"
+    }
+  }
+]

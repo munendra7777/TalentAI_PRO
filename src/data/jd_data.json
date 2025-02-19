@@ -1,0 +1,16 @@
+{
+    "job_requirements": {
+        "company": "Cerence",
+        "title": "Senior Speech Expert",
+        "skills_required": {
+            "Programming Languages": ["R", "Matlab", "Python", "Perl", "AWK"],
+            "Tools & Technologies": ["HTK", "SLTK", "Festvox", "Linux/Unix", "Shell Scripting"],
+            "Methodologies": [],
+            "Soft Skills": ["Communication", "Teamwork", "Customer Focus"]
+        },
+        "experience_required": "3+ years",
+        "education_required": null,
+        "responsibilities": ["Understand core concepts of speech technology/domain", "Build, test, tune and deliver the neural voices as per customer requirement", "Analysis of Cerence product requirements", "Work on different voice building techniques with the internal teams", "Partner closely with customers and Cerence team members to establish and maintain clear, concise communication through regular reporting, meeting participation, and follow-up", "Contribute to advancing technologies and services by providing input and recommendations from project experiences"],
+        "pay_range": null
+    }
+}

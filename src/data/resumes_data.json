@@ -1,0 +1,82 @@
+[
+  {
+    "name": "RANJEET KUMAR",
+    "contact_details": {
+      "phone": "+91 9142748852",
+      "email": "ranjeetkumartilak7@gmail.com",
+      "linkedin": "https://www.linkedin.com/in/ranjeet-kumar-4747551a7"
+    },
+    "objective": null,
+    "skills": {
+      "Programming Languages": [
+        "Python"
+      ],
+      "Tools & Technologies": [
+        "Regex",
+        "GitHub",
+        "Linux",
+        "Jira"
+      ],
+      "Methodologies": [],
+      "Soft Skills": [
+        "Data Annotation/Curation",
+        "Text Translation/Localization"
+      ]
+    },
+    "experience": [
+      {
+        "position": "Computational Linguist",
+        "company": "Shaip.ai",
+        "duration": "06/23 - Present",
+        "responsibilities": [
+          "Researched and analyzed diverse AI data projects",
+          "Collaborated with the QA team",
+          "Analyzed and created sample datasets",
+          "Wrote queries",
+          "Developed annotation guidelines",
+          "Trained QA teams",
+          "Ensured data accuracy and timely delivery"
+        ]
+      },
+      {
+        "position": "Freelance Linguist",
+        "company": "Productive Playhouse",
+        "duration": "01/23-05/23",
+        "responsibilities": [
+          "Performed Quality analysis on speech data",
+          "Created language tests",
+          "Reviewed existing language tests",
+          "Ensured high standards of audio and text quality"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "MA Applied Linguistics",
+        "university": "Hyderabad Central University",
+        "duration": "06/21- 05/23"
+      },
+      {
+        "degree": "Masters in Computational Linguistics",
+        "university": "English and Foreign Languages University, Hyderabad",
+        "duration": "07/19 – 05/2"
+      },
+      {
+        "degree": "B.Sc. (Hons.) PCM",
+        "university": "Magadh University, Bodh Gaya",
+        "duration": "04/2015 – 03/2019"
+      }
+    ],
+    "certifications": [],
+    "projects": [
+      "Transliteration for Indic languages",
+      "Root & Stem Word Extraction from Hindi Text"
+    ],
+    "languages": [
+      "Hindi",
+      "English",
+      "Magahi",
+      "Deccani"
+    ]
+  }
+]
