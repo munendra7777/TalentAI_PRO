@@ -1,2 +1,3 @@
 # git ignore
 .env
+__pycache__/
