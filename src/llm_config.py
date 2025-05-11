@@ -11,14 +11,7 @@ import streamlit as st
 
 
 # Submit button to set the key for the current session
-if st.button("Submit"):
-    if gemini_api_key:
-        st.session_state["gemini_api_key"] = gemini_api_key
-        st.success("GEMINI_API_KEY has been set!")
-    else:
-        st.error("GEMINI_API_KEY cannot be empty.")
-
-# Stop execution if the key is not set
-if not st.session_state["gemini_api_key"]:
-    st.warning("Please enter your GEMINI_API_KEY to proceed.")
+# execution if the key isn't entered
+if not gemini_api_key:
+    st.warning("Please enter your API key to continue.")
     st.stop()
