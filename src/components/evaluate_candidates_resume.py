@@ -95,8 +95,8 @@ def evaluate_candidates_resume():
             cache=True
         )
         
-        #with st.spinner("Processing resumes and job descriptions..."):
-        #    resume_extraction = resume_extraction_crew.kickoff()
+        with st.spinner("Processing resumes and job descriptions..."):
+            resume_extraction = resume_extraction_crew.kickoff()
         
 
         # PROBABLY NOT NEEDED
@@ -142,22 +142,22 @@ def evaluate_candidates_resume():
             )
         
         # Evaluate candidates
-        # with st.spinner("Starting Training Crew..."):
-        #     st.write(f"Starting Training Evaluation Crew.")
-        #     def train_model():
-        #         n_iterations = 10
-        #         inputs = {"job_description": job_data, "resume": resume_data}
-        #         filename = "resume_extraction_model.pkl"
+        with st.spinner("Starting Training Crew..."):
+             st.write(f"Starting Training Evaluation Crew.")
+             def train_model():
+                n_iterations = 10
+                inputs = {"job_description": job_data, "resume": resume_data}
+                filename = "resume_extraction_model.pkl"
 
-        #         try:
-        #             evaluation_crew.train(
-        #             n_iterations=n_iterations, 
-        #             inputs=inputs, 
-        #             filename=filename
-        #             )
-        #         except Exception as e:
-        #             raise Exception(f"An error occurred while training the crew: {e}")
-        #     st.write(f"Finished Training Evaluation Crew.")
+                try:
+                     evaluation_crew.train(
+                     n_iterations=n_iterations, 
+                     inputs=inputs, 
+                     filename=filename
+                     )
+                except Exception as e:
+                    raise Exception(f"An error occurred while training the crew: {e}")
+             st.write(f"Finished Training Evaluation Crew.")
         with st.spinner("Evaluating candidates..."):
            evaluation_results = evaluation_crew.kickoff()
         

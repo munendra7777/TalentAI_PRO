@@ -6,8 +6,10 @@ from textwrap import dedent
 from dotenv import load_dotenv
 from crewai_tools import SerperDevTool, ScrapeWebsiteTool
 from backend.crew_tools import read_resume_data
-
+from tools.linkedin import LinkedInTool
 from openai import OpenAI
+from llm_config import gemini_api_key
+import streamlit as st
 # Ensure the correct import path
 try:
     from tools.linkedin import LinkedInTool
@@ -18,13 +20,18 @@ except ImportError as e:
 load_dotenv()
 
 # Gemini API Setup
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+#GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# Check if the key is already set in session state
+
+GEMINI_API_KEY = st.session_state["gemini_api_key"]
+
 
 
 llm_config = LLM(
 #model="gemini/gemini-1.5-pro",
 model="gemini/gemini-1.5-flash-8b",
-temperature=0.5
+api_key=GEMINI_API_KEY,
+temperature=0.5,
 )
 
 # llm_config = LLM(

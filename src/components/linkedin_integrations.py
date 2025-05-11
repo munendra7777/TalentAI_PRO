@@ -9,17 +9,20 @@ from components.resume_upload_form import read_pdf, read_docx, display_file, rem
 # Load environment variables from .env file
 load_dotenv()
 
-with open("data/jd_data.json", "r") as jd_file:
-    job_requirements = json.load(jd_file)
 
-with open("data/jd_data.json", "r") as jd_file:
-            job_data = json.load(jd_file)
+
+
 
 def linkedin_integrations():
     st.header("LinkedIn Integrations")    
     if st.button("Find Candidates"):
-        #if jd_file:
-            # Initialize agents and tasks
+        # Read the job description data
+        with open("data/jd_data.json", "r") as jd_file:
+            job_requirements = json.load(jd_file)
+        # Read the resume data
+        with open("data/jd_data.json", "r") as jd_file:
+            job_data = json.load(jd_file)
+
         tasks = LinkedInAgentTasks()
         agents = AIAgents()
         
