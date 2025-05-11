@@ -6,15 +6,10 @@ from textwrap import dedent
 from dotenv import load_dotenv
 from crewai_tools import SerperDevTool, ScrapeWebsiteTool
 from backend.crew_tools import read_resume_data
-from tools.linkedin import LinkedInTool
+
 from openai import OpenAI
 from llm_config import gemini_api_key
 import streamlit as st
-# Ensure the correct import path
-try:
-    from tools.linkedin import LinkedInTool
-except ImportError as e:
-    raise ImportError("Failed to import LinkedInTool. Ensure the import path is correct.") from e
 
 # Load environment variables from .env file
 load_dotenv()
@@ -133,7 +128,7 @@ class AIAgents:
             llm=self.llm_config,
             max_iter=3,
             cache=True,
-            tools=[LinkedInTool(), ScrapeWebsiteTool(), ]
+            tools=[ScrapeWebsiteTool()]
         )
 
     def candidate_matcher(self):
@@ -149,7 +144,7 @@ class AIAgents:
             llm=self.llm_config,
             max_iter=3,
             cache=True,
-            tools=[SerperDevTool(), ScrapeWebsiteTool(), LinkedInTool()]
+            tools=[SerperDevTool(), ScrapeWebsiteTool()]
         )
 
     def candidate_outreacher(self):

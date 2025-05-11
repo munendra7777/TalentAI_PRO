@@ -1,7 +1,6 @@
 from textwrap import dedent
 from crewai import Task
 from crewai_tools import FileReadTool, JSONSearchTool, FileWriterTool
-from tools.linkedin import LinkedInTool
 import json
 
 
@@ -68,7 +67,7 @@ class LinkedInAgentTasks:
             ]
             """),
             agent=agent,
-            tools=[file_writer_tool, file_reader_tool, LinkedInTool()],
+            tools=[file_writer_tool, file_reader_tool],
             code_execution_mode="safe",
             output_file="data/linkedin_candidates_data.json",
             tool_arguments={"skills": skills}
