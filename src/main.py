@@ -26,6 +26,7 @@ import os
 import json
 
 
+
 # Function to escape HTML characters
 def escape_html(input_text):
     return html.escape(input_text)

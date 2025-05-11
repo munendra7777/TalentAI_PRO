@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 from crewai_tools import SerperDevTool, ScrapeWebsiteTool
 from backend.crew_tools import read_resume_data
 from llm_config import llm_config
+from llm_config import GEMINI_API_KEY
 from openai import OpenAI
-from llm_config import gemini_api_key
 import streamlit as st
 
 # Load environment variables from .env file

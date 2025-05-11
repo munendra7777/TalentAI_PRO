@@ -1,18 +1,21 @@
 import streamlit as st
 from crewai import LLM
-from dotenv import load_dotenv
-import os
 
-# Ask user for their API key
-GEMINI_API_KEY = st.text_input("Enter your GEMINI_API_KEY", type="password")
-# Ensure the key is entered before proceeding
-if not GEMINI_API_KEY:
-    st.warning("Please enter your API key to continue.")
-    st.stop()  # Stops execution until the user provides a key
+
+# Ensure session state has a placeholder for API key
+if "gemini_api_key" not in st.session_state:
+    st.session_state["gemini_api_key"] = ""
+
+# Display the persistent input box
+GEMINI_API_KEY = st.text_input("Enter your GEMINI_API_KEY", type="password", key="api_input")
+
+# Update session state when the user enters a key
+if GEMINI_API_KEY:
+    st.session_state["gemini_api_key"] = GEMINI_API_KEY
+
 # Configure LLM with the user's API key
 llm_config = LLM(
-    # model="gemini/gemini-1.5-pro",
     model="gemini/gemini-1.5-flash-8b",
-    api_key=GEMINI_API_KEY,  # Use the user-entered key
+    api_key=st.session_state["gemini_api_key"],  # Always uses latest user input
     temperature=0.5,
 )
