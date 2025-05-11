@@ -12,23 +12,6 @@ st.set_page_config(
 # Import necessary libraries
 from crewai import LLM
 
-# Ask user for their API key
-GEMINI_API_KEY = st.text_input("Enter your GEMINI_API_KEY", type="password")
-
-# Ensure the key is entered before proceeding
-if not GEMINI_API_KEY:
-    st.warning("Please enter your API key to continue.")
-    st.stop()  # Stops execution until the user provides a key
-
-# Configure LLM with the user's API key
-llm_config = LLM(
-    # model="gemini/gemini-1.5-pro",
-    model="gemini/gemini-1.5-flash-8b",
-    api_key=GEMINI_API_KEY,  # Use the user-entered key
-    temperature=0.5,
-)
-
-
 from streamlit_option_menu import option_menu
 #from components.resume_upload_form import resume_upload_form 
 from components.model_selection import render_model_selection
@@ -65,7 +48,6 @@ sub_header_description=sanitize_input("TalentAI Pro is a comprehensive platform 
 
 def main():
     st.markdown(f"<h1 style='text-align: center;'>{title_text}</h1>", unsafe_allow_html=True)
-
 
     # Sidebar navigation with icons
     with st.sidebar:
