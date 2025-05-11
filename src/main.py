@@ -24,6 +24,7 @@ import bleach
 import json
 import os 
 import json
+from llm_config import llm_config
 
 
 
@@ -54,8 +55,8 @@ def main():
     with st.sidebar:
         page = option_menu(
             "Navigation",
-            ["Home", "Evaluate Resume", "Interview Questions"],
-            icons=["house", "clipboard-check", "question-circle"],
+            ["Home", "Evaluate Resume", "Interview Questions", "llm_config"],
+            icons=["house", "clipboard-check", "question-circle", "gear"],
             menu_icon="cast",
             default_index=0,
         )
@@ -73,7 +74,10 @@ def main():
         st.subheader("Generate Interview Questions")
         interview_questions()
         # Add functionality for generating interview questions
-    #elif st.session_state['page'] == "Find the RIGHT Candidates":
+    elif st.session_state['page'] == "llm_config":
+        st.subheader("LLM Configuration")
+        llm_config()
+        # Add functionality for LLM configuration
     #    st.subheader("Find the RIGHT Candidates (In-progress)")
         # Add functionality for finding candidates
     #    linkedin_integrations()

@@ -1,21 +1,27 @@
 import streamlit as st
 from crewai import LLM
-
+# Function to retrieve API Key from session state
+def get_gemini_api_key():
+    return st.session_state.get("gemini_api_key", "")
 
 # Ensure session state has a placeholder for API key
 if "gemini_api_key" not in st.session_state:
     st.session_state["gemini_api_key"] = ""
 
-# Display the persistent input box
-GEMINI_API_KEY = st.text_input("Enter your GEMINI_API_KEY", type="password", key="api_input")
+def llm_config():
+    st.write("### Configure Your LLM API Key")
 
-# Update session state when the user enters a key
-if GEMINI_API_KEY:
-    st.session_state["gemini_api_key"] = GEMINI_API_KEY
+    GEMINI_API_KEY = st.text_input(
+        "Enter your GEMINI_API_KEY:",
+        type="password",
+        key="api_input",
+        value=st.session_state.get("gemini_api_key", ""),  # Keeps previous value visible
+    )
 
-# Configure LLM with the user's API key
-llm_config = LLM(
-    model="gemini/gemini-1.5-flash-8b",
-    api_key=st.session_state["gemini_api_key"],  # Always uses latest user input
-    temperature=0.5,
-)
+    # Save the key when entered
+    if GEMINI_API_KEY:
+        st.session_state["gemini_api_key"] = GEMINI_API_KEY
+        st.success("API Key saved successfully!")
+
+    # Configure LLM with the stored API key
+    return GEMINI_API_KEY
