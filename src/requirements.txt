@@ -22,6 +22,7 @@ cffi==1.17.1
 charset-normalizer==3.4.2
 chroma-hnswlib==0.7.6
 chromadb==0.5.23
+chromadb
 click==8.2.0
 cohere==5.15.0
 coloredlogs==15.0.1
