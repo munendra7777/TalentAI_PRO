@@ -2,10 +2,133 @@ from textwrap import dedent
 from crewai import Task
 from crewai_tools import FileReadTool, JSONSearchTool, FileWriterTool
 import json
+import os
+from pydantic import BaseModel, Field
+from typing import List, Dict
+def remove_old_files():
+  if os.path.exists("./resumes_data.json"):
+      os.remove("./resumes_data.json")
+  if os.path.exists("./jd_data.json"):
+      os.remove("./jd_data.json")
+  if os.path.exists("./candidate_evaluation_data.json"):
+      os.remove("./candidate_evaluation_data.json")
+  if os.path.exists("./interview_questions.json"):
+      os.remove("./interview_questions.json")
+  print("Old files removed successfully.")
+
+# Remove old files if they exist
+remove_old_files()
 
 file_reader_tool = FileReadTool()
-file_writer_tool = FileWriterTool(Overwrite=True)
+file_writer_tool = FileWriterTool(overwrite=True)
 
+
+class JobRequirements(BaseModel):
+    company: str
+    title: str
+    skills_required: Dict[str, List[str]]
+    experience_required: str
+    education_required: str
+    responsibilities: List[str]
+    pay_range: str
+
+class JDData(BaseModel):
+    job_requirements: JobRequirements
+
+def validate_jd(data: dict) -> JDData:
+    return JDData(**data)  # Raises an error if invalid
+
+from pydantic import BaseModel
+from typing import List, Dict
+
+class ContactDetails(BaseModel):
+    phone: str
+    email: str
+    linkedin: str
+
+class Skills(BaseModel):
+    Programming_Languages: List[str]
+    Tools_Technologies: List[str]
+    Methodologies: List[str]
+    Soft_Skills: List[str]
+
+class Experience(BaseModel):
+    position: str
+    company: str
+    duration: str
+    responsibilities: List[str]
+
+class ResumeData(BaseModel):
+    name: str
+    contact_details: ContactDetails
+    objective: str
+    skills: Skills
+    experience: List[Experience]
+    education: str
+    certifications: List[str]
+    projects: List[str]
+
+def validate_resume_data(data: dict) -> ResumeData:
+    """
+    Validates the resume JSON data against the defined ResumeData schema.
+    Raises a validation error if the format is incorrect.
+    """
+    return ResumeData(**data)
+
+
+
+class Candidate(BaseModel):
+    name: str
+    score: int
+    strengths: List[str]
+    weaknesses: List[str]
+    missing_skills: List[str]
+    language_and_formatting: str
+    comments: str
+    interview_recommendation: str = Field(alias="Interview recommendation")
+
+class JobRole(BaseModel):
+    role_name: str
+    candidates: List[Candidate]
+    analyst_decision: str
+
+class EvaluationData(BaseModel):
+    job_roles: List[JobRole]
+
+def validate_evaluation_data(data: dict) -> EvaluationData:
+    """
+    Validates the evaluation data JSON against the defined EvaluationData schema.
+    Raises a validation error if the format is incorrect.
+    """
+    return EvaluationData(**data)
+
+
+class RatingCriteria(BaseModel):
+    Excellent: str
+    Good: str
+    Fair: str
+    Poor: str
+
+class Question(BaseModel):
+    question: str
+    area_assessed: str
+    expected_answer: str
+    rating_criteria: RatingCriteria
+
+class InterviewData(BaseModel):
+    candidate: str
+    role: str
+    questions: List[Question]
+
+def validate_interview_data(data: dict) -> InterviewData:
+    """
+    Validates the interview questions JSON against the defined InterviewData schema.
+    Raises a validation error if the format is incorrect.
+    """
+    return InterviewData(**data)
+
+
+  
 class AIAgentTasks:
     def analyze_resume_task(self, agent, resumes, job_descriptions):
         
@@ -41,7 +164,10 @@ class AIAgentTasks:
             allow_code_execution=True,
             tools=[file_writer_tool],
             code_execution_mode="safe",
-            output_file="data/jd_data.json",
+            output_file="jd_data.json",
+            directory="./",
+            overwrite=True,
+            validate_json=validate_jd,
             max_retries=4
         )
 
@@ -165,7 +291,11 @@ class AIAgentTasks:
             allow_code_execution=True,
             tools=[file_writer_tool],
             code_execution_mode="safe",
-            output_file="data/resumes_data.json",
+            output_pydantic=ResumeData,
+            output_file="resumes_data.json",
+            directory="./",
+            overwrite=True,
+            validate_json=validate_resume_data,
             max_retries=5
         )
 
@@ -174,7 +304,7 @@ class AIAgentTasks:
     def evaluate_candidate_task(self, agent, resume_data, job_data):
       return Task(
       description=dedent(f"""
-      Evaluate the candidates based on the provided resume data in "data/resumes_data.json" against the job descriptions in "data/jd_data.json" from the "analyze_resume_task". Break the tasks in smaller sub tasks if needed and save the output in "data/candidate_evaluation_data.json".
+      Evaluate the candidates based on the provided resume data in "resumes_data.json" against the job descriptions in "jd_data.json" from the "analyze_resume_task". Break the tasks in smaller sub tasks if needed and save the output in "candidate_evaluation_data.json".
       
       **Evaluation Process:**
       - Review each resume against the job description for completeness, including skills, experience, education, and language quality.
@@ -255,7 +385,7 @@ class AIAgentTasks:
       - Ensure the output JSON strictly adheres to the schema.
       - Use tools like [file_writer_tool](http://_vscodecontentref_/3) to generate the output report.
       - Handle errors gracefully, such as missing or corrupted data files, and provide informative messages for debugging.
-      - Save the output to "data/candidate_evaluation_data.json".
+      - Save the output to "candidate_evaluation_data.json".
 
       **Pro Tip:** Consider candidates with strong potential who might lack certain skills but show promise for growth in junior roles.
       
@@ -268,7 +398,10 @@ class AIAgentTasks:
       agent=agent,
       tools=[file_writer_tool],
       code_execution_mode="safe",
-      output_file="data/candidate_evaluation_data.json",
+      output_file="candidate_evaluation_data.json",
+      validate_json=validate_evaluation_data, 
+      directory="./",
+      overwrite=True,
       )
 
     def generate_interview_questions_task(self, agent, job_requirements, candidate_evaluation_data):
@@ -313,7 +446,10 @@ class AIAgentTasks:
             agent=agent,
             tools=[file_writer_tool],
             code_execution_mode="safe",
-            output_file="data/interview_questions.json",
+            output_file="interview_questions.json",
+            #validate_json=validate_interview_data,
+            directory="./",
+            overwrite=True,
             max_retries=4
         )
 

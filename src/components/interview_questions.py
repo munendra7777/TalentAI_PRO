@@ -17,10 +17,10 @@ def interview_questions():
     st.title("Interview Questions")
     
     if st.button("Generate Questions"):
-        with open("data/jd_data.json", "r") as jd_file:
+        with open("jd_data.json", "r") as jd_file:
             job_description = json.load(jd_file)
 
-        with open("data/candidate_evaluation_data.json", "r") as candidate_file:
+        with open("candidate_evaluation_data.json", "r") as candidate_file:
                     candidate_evaluation_data = json.load(candidate_file)
 
         if job_description:
@@ -48,8 +48,8 @@ def interview_questions():
             
             # Display the generated questions
             st.subheader("Generated Interview Questions")
-            remove_json_tags("data/interview_questions.json")
-            with open("data/interview_questions.json", "r") as file:
+            remove_json_tags("interview_questions.json")
+            with open("interview_questions.json", "r") as file:
                 questions_data = json.load(file)
             st.json(questions_data, expanded=4)
         else:

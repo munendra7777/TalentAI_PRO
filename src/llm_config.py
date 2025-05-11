@@ -1,27 +1,40 @@
 import streamlit as st
 from crewai import LLM
-# Function to retrieve API Key from session state
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
+
 def get_gemini_api_key():
-    return st.session_state.get("gemini_api_key", "")
+    """Retrieves the GEMINI API key from environment variables or user input."""
+    
+    # Check if API key exists in session state
+    if "GEMINI_API_KEY" not in st.session_state:
+        # Try fetching from environment variables
+        GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Ensure session state has a placeholder for API key
-if "gemini_api_key" not in st.session_state:
-    st.session_state["gemini_api_key"] = ""
+        if GEMINI_API_KEY:
+            st.session_state["GEMINI_API_KEY"] = GEMINI_API_KEY
+        else:
+            # Ask the user to enter the API key if not found
+            GEMINI_API_KEY = st.text_input("Enter your GEMINI_API_KEY:", type="password")
+            if GEMINI_API_KEY:
+                st.session_state["GEMINI_API_KEY"] = GEMINI_API_KEY
 
-def llm_config():
-    st.write("### Configure Your LLM API Key")
+    return st.session_state.get("GEMINI_API_KEY", "")
 
-    GEMINI_API_KEY = st.text_input(
-        "Enter your GEMINI_API_KEY:",
-        type="password",
-        key="api_input",
-        value=st.session_state.get("gemini_api_key", ""),  # Keeps previous value visible
-    )
+# Retrieve the API key
+API_KEY = get_gemini_api_key()
 
-    # Save the key when entered
-    if GEMINI_API_KEY:
-        st.session_state["gemini_api_key"] = GEMINI_API_KEY
-        st.success("API Key saved successfully!")
+# Ensure an API key is provided
+if not API_KEY:
+    st.warning("⚠️ Please enter a valid GEMINI API Key before proceeding.")
+    st.stop()  # Halt execution until a key is entered
 
-    # Configure LLM with the stored API key
-    return GEMINI_API_KEY
+# Configure LLM with the user's API key
+llm_config = LLM(
+    model="gemini/gemini-2.0-flash",
+    api_key=API_KEY,  # Dynamically use user-provided key
+    temperature=0.5,
+)

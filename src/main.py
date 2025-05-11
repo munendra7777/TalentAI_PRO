@@ -24,7 +24,7 @@ import bleach
 import json
 import os 
 import json
-from llm_config import llm_config
+from llm_config import get_gemini_api_key
 
 
 
@@ -76,7 +76,8 @@ def main():
         # Add functionality for generating interview questions
     elif st.session_state['page'] == "llm_config":
         st.subheader("LLM Configuration")
-        llm_config()
+        get_gemini_api_key()
+        
         # Add functionality for LLM configuration
     #    st.subheader("Find the RIGHT Candidates (In-progress)")
         # Add functionality for finding candidates

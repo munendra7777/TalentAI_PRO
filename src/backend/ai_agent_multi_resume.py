@@ -6,7 +6,7 @@ from textwrap import dedent
 from dotenv import load_dotenv
 from crewai_tools import SerperDevTool, ScrapeWebsiteTool
 from backend.crew_tools import read_resume_data
-from llm_config import get_gemini_api_key
+from llm_config import API_KEY, llm_config
 from openai import OpenAI
 import streamlit as st
 
@@ -17,18 +17,19 @@ load_dotenv()
 #GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # Check if the key is already set in session state
 
-GEMINI_API_KEY = get_gemini_api_key()
+#GEMINI_API_KEY = get_gemini_api_key()
 
 #GEMINI_API_KEY = st.secrets["credentials"]["GEMINI_API_KEY"]
 
 
-
+"""
 llm_config = LLM(
 #model="gemini/gemini-1.5-pro",
 model="gemini/gemini-1.5-flash-8b",
 api_key=GEMINI_API_KEY,
 temperature=0.5,
 )
+"""
 
 # llm_config = LLM(
 #     model="ollama/llama3:latest",
@@ -38,7 +39,7 @@ temperature=0.5,
 
 #custom embedder for embeddings
 #embedder=dict(provider="ollama", config=dict(model="nomic-embed-text"))
-embedder=dict(provider="google", config=dict(api_key=GEMINI_API_KEY, model="models/text-embedding-004"))
+embedder=dict(provider="google", config=dict(api_key=API_KEY, model="models/text-embedding-004"))
 
 
 

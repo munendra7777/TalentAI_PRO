@@ -11,7 +11,8 @@ from components.resume_upload_form import read_pdf, read_docx, display_file, rem
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go  # Import plotly.graph_objects as go
-
+import os
+os.environ['LITELLM_LOG'] = 'DEBUG'
 
 # Load environment variables from .env file
 load_dotenv()
@@ -101,14 +102,14 @@ def evaluate_candidates_resume():
 
         # PROBABLY NOT NEEDED
         # Append extracted data to JSON files
-        #append_to_json_file(resume_extraction, "data/resumes_data.json")  # Ensure correct indexing
-        #append_to_json_file(resume_extraction, "data/jd_data.json")  # Ensure correct indexing
+        #append_to_json_file(resume_extraction, "resumes_data.json")  # Ensure correct indexing
+        #append_to_json_file(resume_extraction, "jd_data.json")  # Ensure correct indexing
 
         
         # show job descriptions and resumes data
         st.subheader("Job Descriptions Data")
-        remove_json_tags("data/jd_data.json")
-        with open("data/jd_data.json", "r") as jd_file:
+        remove_json_tags("jd_data.json")
+        with open("jd_data.json", "r") as jd_file:
             job_data = json.load(jd_file)
             # Convert JSON data to pandas DataFrame
             with st.expander("Show Job Descriptions Data"):
@@ -117,13 +118,25 @@ def evaluate_candidates_resume():
 
 
         st.subheader("Resumes Data")
-        remove_json_tags("data/resumes_data.json")
-        with open("data/resumes_data.json", "r") as resume_file:
+        remove_json_tags("resumes_data.json")
+        with open("resumes_data.json", "r") as resume_file:
             resume_data = json.load(resume_file)
+            print(type(resume_data))  # Should output <class 'list'> if correct   
+            #print(resume_data[:2])  # Debugging step to see first few entries 
             # Create an expander to display the JSON content
-            for entry in resume_data:
-                with st.expander(entry["name"]):
-                    st.json(entry, expanded=2)
+            if isinstance(resume_data, list):  # If it's a list, iterate normally
+                for entry in resume_data:
+                    if isinstance(entry, dict) and "name" in entry:
+                        with st.expander(entry["name"]):
+                            st.json(entry, expanded=2)
+                    else:
+                        st.warning(f"Skipping invalid entry: {entry}")
+            elif isinstance(resume_data, dict):  # If it's a dictionary, access directly
+                with st.expander(resume_data["name"]):
+                    st.json(resume_data, expanded=2)
+            else:
+                st.error("Invalid resume data format!")
+
 
 
         # Create Crew for analysis and evaluation
@@ -163,18 +176,21 @@ def evaluate_candidates_resume():
         
         # Display evaluation results
         st.subheader("Evaluation Results")
-        remove_json_tags("data/candidate_evaluation_data.json")
-        with open("data/candidate_evaluation_data.json", "r") as eval_file:
+        remove_json_tags("candidate_evaluation_data.json")
+        with open("candidate_evaluation_data.json", "r") as eval_file:
             evaluation_data = json.load(eval_file)
             # Generate pie chart for candidate scores
                 
             # Display analyst comments in order of scores from highest to lowest
             for role in evaluation_data["job_roles"]:
-                role_name = role["role_name"]
-                candidates = role["candidates"]
-                analyst_decision=role["analyst_decision"]
+                print(f"Available keys in role: {role.keys()}")  # Debugging step
+                role_name = role.get("role_name", "Unknown Role")  # Default if missing
+                candidates = role.get("candidates", [])  # Default to an empty list
+                analyst_decision=role.get("analyst_decision")  # Returns None if missing
                 if analyst_decision:
                     st.write(f"<u>**Analyst Decision** for __{role_name}__ role </u> : {analyst_decision}", unsafe_allow_html=True)
+                else:
+                    st.write(f"<u>**Analyst Decision** for __{role_name}__ role </u> : No decision available", unsafe_allow_html=True)
                 sorted_candidates = sorted(candidates, key=lambda x: x.get('score', 0), reverse=True)
                 for candidate in sorted_candidates:
                     with st.expander(f"**{candidate.get('name', 'No name available')}** (*{candidate.get('Interview recommendation','No recommendation available')}*)"):
