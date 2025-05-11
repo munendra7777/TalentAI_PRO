@@ -1,17 +1,8 @@
-import streamlit as st
+class LLMConfig:
+    def __init__(self, api_key):
+        self.api_key = api_key
+        self.model = "gemini/gemini-1.5-flash-8b"
+        self.temperature = 0.5
 
-# Initialize the key in session state if it doesn't exist
-if "gemini_api_key" not in st.session_state:
-    st.session_state["gemini_api_key"] = ""
-
-# Input field for GEMINI_API_KEY
-gemini_api_key = st.text_input("Enter your GEMINI_API_KEY", type="password")
-import toml
-import streamlit as st
-
-
-# Submit button to set the key for the current session
-# execution if the key isn't entered
-if not gemini_api_key:
-    st.warning("Please enter your API key to continue.")
-    st.stop()
+def get_llm_config(api_key):
+    return LLMConfig(api_key)
