@@ -89,10 +89,10 @@ def evaluate_candidates_resume():
             agents=[analyze_resume_agent],
             tasks=analyse_resume_tasks,  # Changed to pass the list of tasks
             verbose=True,
-            memory=True,
+            memory=False,
             process=Process.sequential,
             embedder=embedder,
-            cache=True
+            cache=False
         )
         
         with st.spinner("Processing resumes and job descriptions..."):
@@ -135,10 +135,10 @@ def evaluate_candidates_resume():
                 agents=[evaluate_candidate_agent],
                 tasks=[evaluate_candidate_task],
                 verbose=True,
-                memory=True,
+                memory=False,
                 process=Process.sequential,
                 embedder=embedder,
-                cache=True
+                cache=False
             )
         
         # Evaluate candidates
