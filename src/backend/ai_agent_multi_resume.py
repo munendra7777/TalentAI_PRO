@@ -6,7 +6,6 @@ from textwrap import dedent
 from dotenv import load_dotenv
 from crewai_tools import SerperDevTool, ScrapeWebsiteTool
 from backend.crew_tools import read_resume_data
-from llm_config import llm_config
 from llm_config import get_gemini_api_key
 from openai import OpenAI
 import streamlit as st
