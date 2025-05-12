@@ -1,44 +1,37 @@
 import streamlit as st
 from crewai import LLM
-from dotenv import load_dotenv
 import os
 
-# Load environment variables from .env file
-load_dotenv()
-
 def get_gemini_api_key():
-    """Retrieves the GEMINI API key from environment variables or user input."""
+    """Retrieve the Gemini API key from Streamlit secrets or environment variables."""
+    api_key = None
+
+    # Try fetching from Streamlit secrets first
+    try:
+        api_key = st.secrets["GEMINI"]["API_KEY"]
+    except (KeyError, AttributeError, st.errors.StreamlitSecretNotFoundError):
+        pass # If not found in secrets, try environment variables
+
+    # If not found in secrets, check environment variables
+    if not api_key:
+        api_key = os.getenv("GEMINI_API_KEY")
+        
     
-    # Check if API key exists in session state
-    if "GEMINI_API_KEY" not in st.session_state:
-        # Try fetching from environment variables
-        GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-        # try in secrets.toml
-        if not GEMINI_API_KEY:
-            GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
+    # take user input if not found in both
+    if not api_key:
+        api_key = st.text_input("Enter your Gemini API Key", type="password")
 
+    # Handle missing API key
+    if not api_key:
+        st.warning("⚠️ GEMINI API Key not found. Please check Streamlit secrets or environment variables.")
+    
+    return api_key
 
-        if GEMINI_API_KEY:
-            st.session_state["GEMINI_API_KEY"] = GEMINI_API_KEY
-        else:
-            # Ask the user to enter the API key if not found
-            GEMINI_API_KEY = st.text_input("Enter your GEMINI_API_KEY:", type="password")
-            if GEMINI_API_KEY:
-                st.session_state["GEMINI_API_KEY"] = GEMINI_API_KEY
-
-    return st.session_state.get("GEMINI_API_KEY", "")
-
-# Retrieve the API key
 API_KEY = get_gemini_api_key()
 
-# Ensure an API key is provided
+# Stop execution if API key is missing
 if not API_KEY:
-    st.warning("⚠️ Please enter a valid GEMINI API Key before proceeding.")
-    st.stop()  # Halt execution until a key is entered
+    st.stop()
 
-# Configure LLM with the user's API key
-llm_config = LLM(
-    model="gemini/gemini-2.0-flash",
-    api_key=API_KEY,  # Dynamically use user-provided key
-    temperature=0.5,
-)
+# Configure LLM with the API Key
+llm_config = LLM(model="gemini/gemini-2.0-flash", api_key=API_KEY, temperature=0.5)
