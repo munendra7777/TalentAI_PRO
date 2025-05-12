@@ -14,7 +14,7 @@ load_dotenv()
 
 
 def interview_questions():
-    st.title("Interview Questions")
+    #st.subheader("Interview Questions")
     
     if st.button("Generate Questions"):
         with open("jd_data.json", "r") as jd_file:
