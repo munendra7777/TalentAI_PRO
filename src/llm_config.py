@@ -13,6 +13,10 @@ def get_gemini_api_key():
     if "GEMINI_API_KEY" not in st.session_state:
         # Try fetching from environment variables
         GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+        # try in secrets.toml
+        if not GEMINI_API_KEY:
+            GEMINI_API_KEY = st.secrets.get("GEMINI_API_KEY")
+
 
         if GEMINI_API_KEY:
             st.session_state["GEMINI_API_KEY"] = GEMINI_API_KEY
