@@ -1,21 +1,37 @@
 import streamlit as st
+from crewai import LLM
+import os
 
-# Initialize the key in session state if it doesn't exist
-if "gemini_api_key" not in st.session_state:
-    st.session_state["gemini_api_key"] = ""
+def get_gemini_api_key():
+    """Retrieve the Gemini API key from Streamlit secrets or environment variables."""
+    api_key = None
 
-# Input field for GEMINI_API_KEY
-gemini_api_key = st.text_input("Enter your GEMINI_API_KEY", type="password")
+    # Try fetching from Streamlit secrets first
+    try:
+        api_key = st.secrets["GEMINI"]["API_KEY"]
+    except (KeyError, AttributeError, st.errors.StreamlitSecretNotFoundError):
+        pass # If not found in secrets, try environment variables
 
-# Submit button to set the key for the current session
-if st.button("Submit"):
-    if gemini_api_key:
-        st.session_state["gemini_api_key"] = gemini_api_key
-        st.success("GEMINI_API_KEY has been set!")
-    else:
-        st.error("GEMINI_API_KEY cannot be empty.")
+    # If not found in secrets, check environment variables
+    if not api_key:
+        api_key = os.getenv("GEMINI_API_KEY")
+        
+    
+    # take user input if not found in both
+    if not api_key:
+        api_key = st.text_input("Enter your Gemini API Key", type="password")
 
-# Stop execution if the key is not set
-if not st.session_state["gemini_api_key"]:
-    st.warning("Please enter your GEMINI_API_KEY to proceed.")
+    # Handle missing API key
+    if not api_key:
+        st.warning("⚠️ GEMINI API Key not found. Please check Streamlit secrets or environment variables.")
+    
+    return api_key
+
+API_KEY = get_gemini_api_key()
+
+# Stop execution if API key is missing
+if not API_KEY:
     st.stop()
+
+# Configure LLM with the API Key
+llm_config = LLM(model="gemini/gemini-2.0-flash", api_key=API_KEY, temperature=0.5)

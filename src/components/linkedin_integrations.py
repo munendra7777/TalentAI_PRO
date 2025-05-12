@@ -17,10 +17,10 @@ def linkedin_integrations():
     st.header("LinkedIn Integrations")    
     if st.button("Find Candidates"):
         # Read the job description data
-        with open("data/jd_data.json", "r") as jd_file:
+        with open("jd_data.json", "r") as jd_file:
             job_requirements = json.load(jd_file)
         # Read the resume data
-        with open("data/jd_data.json", "r") as jd_file:
+        with open("jd_data.json", "r") as jd_file:
             job_data = json.load(jd_file)
 
         tasks = LinkedInAgentTasks()
@@ -45,8 +45,8 @@ def linkedin_integrations():
         
         # Display the found candidates
         st.subheader("Found Candidates")
-        remove_json_tags("data/linkedin_candidates_data.json")
-        with open("data/linkedin_candidates_data.json","r") as file:
+        remove_json_tags("linkedin_candidates_data.json")
+        with open("linkedin_candidates_data.json","r") as file:
             candidates_data = json.load(file)
             st.json(candidates_data)
     if st.button("Match Candidates"):
@@ -145,7 +145,7 @@ def linkedin_integrations():
             
             # Display the report
             st.subheader("Candidate Report")
-            with open("data/candidate_report.md", "r") as file:
+            with open("candidate_report.md", "r") as file:
                 report = file.read()
             st.markdown(report)
         else:

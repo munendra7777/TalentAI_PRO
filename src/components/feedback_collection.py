@@ -1,12 +1,6 @@
 import streamlit as st
 
+GOOGLE_FORM_URL = "https://forms.gle/KUvyBZhaKhzao4Tp7"
 def feedback_collection():
-    st.title("Feedback Collection")
-    feedback = st.text_area("Your Feedback")
-    
-    if st.button("Submit Feedback"):
-        if feedback:
-            # Logic to handle feedback submission
-            st.success("Thank you for your feedback!")
-        else:
-            st.error("Please enter your feedback.")
+    # Embed Google Form
+    st.components.v1.iframe(GOOGLE_FORM_URL, height=2000)
