@@ -1,4 +1,4 @@
 # git ignore
 .env
-__pycache__/
-src/backend/__pycache__/*.pyc
+src/backend/__pycache__/
+src/data/

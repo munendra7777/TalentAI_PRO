@@ -23,7 +23,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 llm_config = LLM(
 #model="gemini/gemini-1.5-pro",
-model="gemini/gemini-1.5-flash-8b",
+model="gemini/gemini-2.0-flash",
 temperature=0.5
 )
 

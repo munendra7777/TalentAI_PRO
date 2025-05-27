@@ -2,6 +2,10 @@ from textwrap import dedent
 from crewai import Task
 from crewai_tools import FileReadTool, JSONSearchTool, FileWriterTool
 import json
+from pydantic import BaseModel
+from typing import List, Optional
+from components.pydantic_models import EvaluationResult, ResumeData
+
 
 file_reader_tool = FileReadTool()
 file_writer_tool = FileWriterTool(Overwrite=True)
@@ -39,7 +43,7 @@ class AIAgentTasks:
             expected_output="A structured JSON output containing the extracted information from the job descriptions, including skills required, experience required, and education required. The should be valid JSON object with the extracted details. Do not include \"```json\" and \"```\" tags in the output file.",
             agent=agent,
             allow_code_execution=True,
-            tools=[file_writer_tool],
+            
             code_execution_mode="safe",
             output_file="data/jd_data.json",
             max_retries=4
@@ -163,10 +167,10 @@ class AIAgentTasks:
             expected_output="A structured JSON output containing the extracted information from the resumes, including skills, experience, education, certifications, and projects. Rewrite the output if the file is already present. The JSON should be a valid JSON object with the extracted details. Do not include \"```json\" and \"```\" tags in the output file.",
             agent=agent,
             allow_code_execution=True,
-            tools=[file_writer_tool],
             code_execution_mode="safe",
             output_file="data/resumes_data.json",
-            max_retries=5
+            max_retries=5,
+            output_pydantic = ResumeData
         )
 
         return [resume_task, jd_task]
@@ -174,10 +178,11 @@ class AIAgentTasks:
     def evaluate_candidate_task(self, agent, resume_data, job_data):
       return Task(
       description=dedent(f"""
-      Evaluate the candidates based on the provided resume data in "data/resumes_data.json" against the job descriptions in "data/jd_data.json" from the "analyze_resume_task". Break the tasks in smaller sub tasks if needed and save the output in "data/candidate_evaluation_data.json".
+      Evaluate the candidates based on the provided resume data in "data/resumes_data.json" against the each job description from the "data/jd_data.json" from the "analyze_resume_task". Break the tasks into smaller sub-tasks if needed and append the output for each role in "data/candidate_evaluation_data.json".
       
       **Evaluation Process:**
-      - Review each resume against the job description for completeness, including skills, experience, education, and language quality.
+      - PROCESS EACH JOB ROLE SEPARATELY FOR ANALYSING THE CANDIDATES.
+      - Review each resume against each job description for completeness, including skills, experience, education, and language quality.
       - Use language analysis tools to check the correctness and clarity of the resume’s language. Flag unclear, vague, or overly complex phrasing and note grammatical errors or formatting issues.
       - Highlight inconsistencies in the resume, such as repetitive mention of skills or experience, and spelling mistakes, pointing out the relevant portions.
       - Compare the resume against industry-specific skill requirements to identify missing or underrepresented skills required for the role.
@@ -192,7 +197,7 @@ class AIAgentTasks:
       - If certain skills are actually missing and the candidate has no experience or projects to demonstrate those skills, it should be considered as a negative point.
       - Optionally analyze the candidate’s online presence (e.g., LinkedIn or personal website) to assess how well their personal brand aligns with their resume.
       - Identify missing certifications, skills, or experiences that would improve the candidate’s suitability for the role.
-      - Generate a detailed evaluation report for each candidate and for each role.
+      - Generate a detailed evaluation report for each candidate and for each job role.
       - Candidate qualifies for the interview if the score is above 70% based on the evaluation process.
       - For final comment and recommendation, consider the overall match of the candidate with the job requirements, including strengths, weaknesses, and missing skills.
 
@@ -221,7 +226,7 @@ class AIAgentTasks:
           ],
           "language_and_formatting": "The resume has clear and concise language with no grammatical errors. The formatting is consistent and easy to read.",
           "comments": "Rob Doe has a strong match with the job requirements. He possesses the required skills (Python, Java, C++) and has relevant work experience, including a 3-month internship at ABC Inc. His educational background aligns perfectly with the job's requirement for a Bachelor of Science in Computer Science. Additionally, his certifications in Java and Python further strengthen his profile.",
-          "Interview recommendation": "Highly recommended"
+          "Interview_recommendation": "Highly recommended"
         }},
         {{
           "name": "Jane Smith",
@@ -243,13 +248,20 @@ class AIAgentTasks:
           ],
           "language_and_formatting": "The resume has a clear and concise language have some repetitive mention of skills and responsibilities. The resume also has grammatical errors and spelling mistakes.", 
           "comments": "Jane Smith has a good match with the job requirements but lacks experience in C++, LLM, and Regex, which are required skills for the position. However, she has more overall work experience than Rob, which could be beneficial. Her educational background in Data Science is relevant, and her certifications in Python and Java are valuable. Despite the missing skills, her extensive experience and strong technical background make her a viable candidate.",
-          "Interview recommendation": "Recommended"
+          "Interview_recommendation": "Recommended"
         }}
           ],
           "analyst_decision": "Both candidates are strong, with Rob Doe being the better fit due to his comprehensive skill set and relevant experience. However, Jane Smith has more overall work experience, which could be advantageous. Rob's alignment with the job requirements, including his experience with C++ and Regex, makes him the preferred candidate."
-        }}
+        }},
+        {{
+          "role_name": "Data Scientist",
+          "candidates": [
+        {{
+          "name": "Alice Brown",
+          "score": 75,
+          "strengths": [
         ]
-      }}
+      }}}}
 
       **Task Requirements:**
       - Ensure the output JSON strictly adheres to the schema.
@@ -264,11 +276,12 @@ class AIAgentTasks:
       --------------RESUME_DATA---------------
       {resume_data}
       """),
-      expected_output="A structured JSON output containing the detailed evaluation report of the candidates, including strengths, weaknesses, inconsistencies, and a final score.",
+      expected_output="A structured JSON output containing the detailed evaluation report of the candidates, including strengths, weaknesses, inconsistencies, and a final score for each job role.",
       agent=agent,
-      tools=[file_writer_tool],
       code_execution_mode="safe",
+      #tools=[file_writer_tool],
       output_file="data/candidate_evaluation_data.json",
+      output_pydantic = EvaluationResult
       )
 
     def generate_interview_questions_task(self, agent, job_requirements, candidate_evaluation_data):
@@ -311,7 +324,7 @@ class AIAgentTasks:
             """),
             expected_output="A JSON list of interview questions tailored to the candidate's profile based on the job description and evaluation. Include suggestions for the interviewer on how to rate the candidate's performance for each question, and what the interviewer should expect as an answer for each question. Align the questions for each candidate in decreasing order of evaluation score if they have qualified for interview.",
             agent=agent,
-            tools=[file_writer_tool],
+            
             code_execution_mode="safe",
             output_file="data/interview_questions.json",
             max_retries=4
