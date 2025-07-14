@@ -1,6 +1,7 @@
-__import__('pysqlite3')
+#__import__('pysqlite3') needed only when used on streamlit cloud, otherwise it is not needed
+# sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
 import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 import streamlit as st
 
@@ -78,7 +79,7 @@ def main():
         st.write("")
         col1, col2, col3 = st.columns([1,2,1])
         with col2:
-            st.image("src/logo.png", caption="TalentAI Pro", width=400)
+            st.image("logo.png", caption="TalentAI Pro", width=400)
 
         st.markdown("""
 ###### Why I Built this App? 
