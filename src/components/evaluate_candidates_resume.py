@@ -110,8 +110,8 @@ def evaluate_candidates_resume():
         )
         
         # Uncomment the following lines to process resumes
-        #with st.spinner("Processing resumes and job descriptions..."):
-        #    resume_extraction = asyncio.run(resume_extraction_crew.kickoff_async())
+        with st.spinner("Processing resumes and job descriptions..."):
+            resume_extraction = asyncio.run(resume_extraction_crew.kickoff_async())
         
         # Clean the data
         remove_json_tags("data/resumes_data.json")
@@ -161,7 +161,7 @@ def evaluate_candidates_resume():
                 # Process this job role
                 with st.spinner(f"Evaluating candidates for {role_title}..."):
                     try:
-                        #crew_result = asyncio.run(evaluation_crew.kickoff_async())
+                        crew_result = asyncio.run(evaluation_crew.kickoff_async())
                         # Get the output directly from crew_result
                         task_output = evaluate_candidate_task.output  # Use raw_output instead of tasks[0].output
                         #st.write(f"Debug: Task output type: {type(task_output)}")
