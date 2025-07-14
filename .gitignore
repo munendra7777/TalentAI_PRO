@@ -2,3 +2,4 @@
 .env
 src/backend/__pycache__/
 src/data/
+src/.streamlit/secrets.toml

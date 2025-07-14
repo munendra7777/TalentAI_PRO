@@ -110,8 +110,8 @@ def evaluate_candidates_resume():
         )
         
         # Uncomment the following lines to process resumes
-        with st.spinner("Processing resumes and job descriptions..."):
-            resume_extraction = asyncio.run(resume_extraction_crew.kickoff_async())
+        #with st.spinner("Processing resumes and job descriptions..."):
+        #    resume_extraction = asyncio.run(resume_extraction_crew.kickoff_async())
         
         # Clean the data
         remove_json_tags("data/resumes_data.json")
@@ -140,7 +140,7 @@ def evaluate_candidates_resume():
                 #st.write(f"Debug: Processing job role: {role_title}")
 
                 # Convert string job_role to dict format if needed
-                #job_role_dict = job_role if isinstance(job_role, dict) #else {'title': 'role', 'description': job_role}
+                job_role_dict = job_role if isinstance(job_role, dict)else {'title': 'role', 'description': job_role}
 
                 evaluate_candidate_task = tasks.evaluate_candidate_task(
                     evaluate_candidate_agent, 
@@ -161,7 +161,7 @@ def evaluate_candidates_resume():
                 # Process this job role
                 with st.spinner(f"Evaluating candidates for {role_title}..."):
                     try:
-                        crew_result = asyncio.run(evaluation_crew.kickoff_async())
+                        #crew_result = asyncio.run(evaluation_crew.kickoff_async())
                         # Get the output directly from crew_result
                         task_output = evaluate_candidate_task.output  # Use raw_output instead of tasks[0].output
                         #st.write(f"Debug: Task output type: {type(task_output)}")
@@ -203,8 +203,76 @@ def evaluate_candidates_resume():
         remove_json_tags("data/jd_data.json")
         with open("data/jd_data.json", "r") as jd_file:
             job_data = json.load(jd_file)
-            with st.expander("Show Job Descriptions Data"):
-                st.json(job_data, expanded=3)
+            
+            # Add a toggle to switch between JSON and Markdown view for Job Descriptions
+            jd_display_mode = st.toggle("Display Job Descriptions as JSON", value=False, key="jd_display_mode")
+            
+            if jd_display_mode:
+                #st.toggle("Display Job Descriptions as Markdown", value=False, key="jd_display_mode_markdown", disabled=True)
+                with st.expander("Show Job Descriptions Data as JSON"):
+                    st.json(job_data, expanded=3)
+
+            else:
+                # Convert job_data to a Markdown string and display it
+                job_descriptions = job_data.get("job_requirements", [])
+                
+                # Debug information
+                #st.write(f"Debug: Number of job descriptions: {len(job_descriptions)}")
+                #st.write(f"Debug: Type of job_descriptions: {type(job_descriptions)}")
+                
+                # Handle both single job and multiple jobs
+                if isinstance(job_descriptions, dict):
+                    job_descriptions = [job_descriptions]
+                
+                for job in job_descriptions:
+                    # Convert string to dict if needed
+                    if isinstance(job, str):
+                        job = {"title": "Job Description", "description": job}
+                        
+                    with st.expander(f"**{job.get('title', 'Job Description')}**"):
+                        # Create columns for better organization
+                        col1, col2 = st.columns(2)
+                        
+                        # Basic Information
+                        with col1:
+                            st.subheader("Basic Information")
+                            if job.get('company'):
+                                st.write(f"**Company:** {job['company']}")
+                            if job.get('title'):
+                                st.write(f"**Position:** {job['title']}")
+                            if job.get('pay_range'):
+                                st.write(f"**Salary Range:** {job['pay_range']}")
+                        
+                        # Requirements
+                        with col2:
+                            st.subheader("Requirements")
+                            if job.get('education_required'):
+                                st.write("**Education:**")
+                                st.write(job['education_required'])
+                            if job.get('experience_required'):
+                                st.write("**Experience:**")
+                                st.write(job['experience_required'])
+                            if job.get('skills_required'):
+                                st.write("**Skills:**")
+                                if isinstance(job['skills_required'], list):
+                                    for skill in job['skills_required']:
+                                        st.write(f"- {skill}")
+                                else:
+                                    st.write(job['skills_required'])
+                        
+                        # Full Description
+                        if job.get('description'):
+                            st.subheader("Job Description")
+                            st.write(job['description'])
+                        
+                        # Responsibilities
+                        if job.get('responsibilities'):
+                            st.subheader("Responsibilities")
+                            if isinstance(job['responsibilities'], list):
+                                for resp in job['responsibilities']:
+                                    st.write(f"- {resp}")
+                            else:
+                                st.write(job['responsibilities'])
     
     if os.path.exists("data/resumes_data.json"):
         st.subheader("Resumes Data")
@@ -219,25 +287,40 @@ def evaluate_candidates_resume():
                 resumes = resume_data.get("resumes", []) if isinstance(resume_data, dict) else resume_data
                 st.write("Number of resumes found:", len(resumes))
                 
-                if isinstance(resumes, list):
-                    empty_resumes = []
-                    for entry in resumes:
-                        if isinstance(entry, dict):
-                            if 'name' in entry and any(entry.values()):
-                                with st.expander(entry["name"]):
-                                    st.json(entry, expanded=2)
-                            else:
-                                empty_resumes.append(entry.get('name', 'Unnamed Resume'))
-                        else:
-                            empty_resumes.append('Improperly formatted resume')
-                    
-                    if empty_resumes:
-                        st.warning("⚠️ The following resumes could not be properly processed:")
-                        for resume in empty_resumes:
-                            st.write(f"- {resume}")
+                # Add a toggle to switch between JSON and Markdown view for Resumes
+                resume_display_mode = st.toggle("Display Resumes as Formatted text", value=True, key="resume_display_mode")
+                
+                if resume_display_mode:
+                    #st.toggle("Display Resumes as JSON", value=True, key="resume_display_mode", disabled=True)
+                    # Convert resumes data to a Markdown string and display it
+                    for resume in resumes:
+                        markdown_string = ""
+                        with st.expander(f"**{resume.get('name', 'Unnamed Resume')}**"):
+                            for key, value in resume.items():
+                                #markdown_string += f"**{key.replace('_', ' ').title()}:** {value}\n\n"  # Improved formatting
+                                markdown_string += f"**{key.replace('_', ' ').title()}:** {value}\n\n"  # Improved formatting
+                            st.markdown(markdown_string)
                 else:
-                    st.error("❌ Resume data is not in the expected list format")
-                    st.write("Debug: Actual format:", type(resumes))
+                    #st.toggle("Display Resumes as Markdown", value=False, key="resume_display_mode", disabled=True)
+                    if isinstance(resumes, list):
+                        empty_resumes = []
+                        for entry in resumes:
+                            if isinstance(entry, dict):
+                                if 'name' in entry and any(entry.values()):
+                                    with st.expander(entry["name"]):
+                                        st.json(entry, expanded=2)
+                                else:
+                                    empty_resumes.append(entry.get('name', 'Unnamed Resume'))
+                            else:
+                                empty_resumes.append('Improperly formatted resume')
+                        
+                        if empty_resumes:
+                            st.warning("⚠️ The following resumes could not be properly processed:")
+                            for resume in empty_resumes:
+                                st.write(f"- {resume}")
+                    else:
+                        st.error("❌ Resume data is not in the expected list format")
+                        st.write("Debug: Actual format:", type(resumes))
             except json.JSONDecodeError as e:
                 st.error(f"❌ Error reading resume data: {str(e)}")
                 with open("data/resumes_data.json", "r") as f:
