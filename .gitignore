@@ -1,6 +1,12 @@
 # git ignore
+<<<<<<< HEAD
 *.env
 __pycache__/
 *.json
 *.pyc
 ../.talent_ai_venv/
+=======
+.env
+src/backend/__pycache__/
+src/data/
+>>>>>>> refs/remotes/origin/dev_branch

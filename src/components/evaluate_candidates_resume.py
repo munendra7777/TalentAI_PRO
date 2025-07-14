@@ -1,36 +1,58 @@
 import streamlit as st
 import os
 import json
-import uuid
 from dotenv import load_dotenv
 from crewai import Crew, Process
 from backend.ai_agent_multi_resume_tasks import AIAgentTasks
 from backend.ai_agent_multi_resume import AIAgents, embedder
 from backend.crew_tools import read_resume_data
 from components.resume_upload_form import read_pdf, read_docx, display_file, remove_json_tags
+from components.pydantic_models import EvaluationResult, JobRole, Candidate
 import pandas as pd
 import plotly.express as px
+<<<<<<< HEAD
 import plotly.graph_objects as go  # Import plotly.graph_objects as go
 import os
 os.environ['LITELLM_LOG'] = 'DEBUG'
+=======
+import plotly.graph_objects as go
+import asyncio
+import tempfile
+
+>>>>>>> refs/remotes/origin/dev_branch
 
 # Load environment variables from .env file
 load_dotenv()
 
-
 def read_resumes_from_files(files):
     resumes = []
+    skipped_files = []  # Track files that couldn't be processed
+    st.write(f"Processing {len(files)} resume files")
     for file in files:
         try:
             if file.type == "application/pdf":
-                resumes.append(read_pdf(file))
+                content = read_pdf(file)
             elif file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-                resumes.append(read_docx(file))
+                content = read_docx(file)
             else:
-                resumes.append(file.read().decode("utf-8"))
+                content = file.read().decode("utf-8")
+            if content and content.strip():  # Check if content is not empty
+                resumes.append(content)
+                #st.write(f"Debug: Successfully processed {file.name}")
+            else:
+                skipped_files.append((file.name, "Empty content"))
         except Exception as e:
+            skipped_files.append((file.name, str(e)))
             st.error(f"Error reading file {file.name}: {e}")
-    return [resume for resume in resumes if resume]  # Filter out empty resumes
+    # Show summary of skipped files
+    if skipped_files:
+        st.warning("⚠️ The following files could not processed, check if they are corrupted!:")
+        for file_name, reason in skipped_files:
+            st.write(f"- {file_name}: {reason}")
+            
+    processed = [resume for resume in resumes if resume]  # Filter out empty resumes
+    st.write(f"Successfully processed {len(processed)} out of {len(files)} files")
+    return processed
 
 def read_job_requirements_from_files(files):
     job_requirements = []
@@ -63,7 +85,6 @@ def evaluate_candidates_resume():
         
         resumes = read_resumes_from_files(resume_files)
         job_requirements = read_job_requirements_from_files(job_files)
-        #resume_train = read_job_requirements_from_files(r'"C:\Users\munendra.kumar\TalentAI\hiring-assistant\hiring-assistant\src\data\train\resume_train.json"')
 
         if job_requirements_text:
             job_requirements.append(job_requirements_text)
@@ -72,11 +93,9 @@ def evaluate_candidates_resume():
             st.error("No resumes found in the uploaded files.")
             return
         
-        job_files=job_requirements_text
-
         # Display the count of selected resumes and job descriptions
-        st.write(f"Selected {len(resumes)} resumes for processing.")
-        st.write(f"Selected {len(job_requirements)} job descriptions for processing.")
+        st.write(f"Selected {len(resumes)} resumes for evaluation.")
+        st.write(f"Selected {len(job_requirements)} job descriptions for evaluation.")
         
         # Initialize agents and tasks
         tasks = AIAgentTasks()
@@ -84,11 +103,11 @@ def evaluate_candidates_resume():
         
         # Create Crew for data extraction
         analyze_resume_agent = agents.analyze_resume()
-        analyse_resume_tasks = tasks.analyze_resume_task(analyze_resume_agent, resumes, job_requirements)  # Changed to return a list of tasks
+        analyse_resume_tasks = tasks.analyze_resume_task(analyze_resume_agent, resumes, job_requirements)
         
         resume_extraction_crew = Crew(
             agents=[analyze_resume_agent],
-            tasks=analyse_resume_tasks,  # Changed to pass the list of tasks
+            tasks=analyse_resume_tasks,
             verbose=True,
             memory=False,
             process=Process.sequential,
@@ -96,6 +115,7 @@ def evaluate_candidates_resume():
             cache=False
         )
         
+<<<<<<< HEAD
         with st.spinner("Processing resumes and job descriptions..."):
             resume_extraction = resume_extraction_crew.kickoff()
         
@@ -138,10 +158,26 @@ def evaluate_candidates_resume():
                 st.error("Invalid resume data format!")
 
 
+=======
+        # Uncomment the following lines to process resumes
+        with st.spinner("Processing resumes and job descriptions..."):
+            resume_extraction = asyncio.run(resume_extraction_crew.kickoff_async())
+        
+        # Clean the data
+        remove_json_tags("data/resumes_data.json")
+        with open("data/resumes_data.json", "r", encoding='utf-8') as resume_file:
+            resume_data_raw = json.load(resume_file)
+            resume_data = resume_data_raw.get("resumes", [])  # Get the resumes array
+        
+        remove_json_tags("data/jd_data.json")
+        with open("data/jd_data.json", "r") as jd_file:
+            job_data = json.load(jd_file)
+>>>>>>> refs/remotes/origin/dev_branch
 
         # Create Crew for analysis and evaluation
         with st.spinner("Evaluating candidates against job descriptions..."):
             evaluate_candidate_agent = agents.evaluate_candidate()
+<<<<<<< HEAD
             evaluate_candidate_task = tasks.evaluate_candidate_task(evaluate_candidate_agent, resume_data, job_data)
         
             evaluation_crew = Crew(
@@ -173,16 +209,136 @@ def evaluate_candidates_resume():
              st.write(f"Finished Training Evaluation Crew.")
         with st.spinner("Evaluating candidates..."):
            evaluation_results = evaluation_crew.kickoff()
+=======
+            all_evaluations = EvaluationResult(job_roles=[])  # Initialize with Pydantic model
+            temp_results = []
+        # Process each job role separately
+            # Before the loop, ensure job_requirements is a list
+            job_requirements = job_data.get("job_requirements", [])
+            if isinstance(job_requirements, dict):
+                job_requirements = [job_requirements]
+
+            for job_role in job_requirements:
+                role_title = job_role.get('title', 'Unnamed Role') # Safely get title
+                temp_file = os.path.join(tempfile.gettempdir(), f"eval_{role_title}.json")
+                #st.write(f"Debug: Processing job role: {role_title}")
+
+                # Convert string job_role to dict format if needed
+                #job_role_dict = job_role if isinstance(job_role, dict) #else {'title': 'role', 'description': job_role}
+
+                evaluate_candidate_task = tasks.evaluate_candidate_task(
+                    evaluate_candidate_agent, 
+                    resume_data, 
+                    {"job_requirements": [job_role]}
+                )
+                
+                evaluation_crew = Crew(
+                    agents=[evaluate_candidate_agent],
+                    tasks=[evaluate_candidate_task],
+                    verbose=True,
+                    memory=True,
+                    process=Process.sequential,
+                    embedder=embedder,
+                    cache=False
+                )
+                
+                # Process this job role
+                with st.spinner(f"Evaluating candidates for {role_title}..."):
+                    try:
+                        crew_result = asyncio.run(evaluation_crew.kickoff_async())
+                        # Get the output directly from crew_result
+                        task_output = evaluate_candidate_task.output  # Use raw_output instead of tasks[0].output
+                        #st.write(f"Debug: Task output type: {type(task_output)}")
+                        if task_output and task_output.pydantic:
+                            # If we got a Pydantic model directly
+                            result = task_output.pydantic
+                        else:
+                            # Parse from raw output if needed
+                            raw_output = task_output.raw if task_output else crew_result.tasks[0].output.raw
+                            #st.write(f"Debug: Raw output type: {type(raw_output)}")
+                            if isinstance(raw_output, str):
+                                if "```json" in raw_output:
+                                    json_str = raw_output.split("```json")[1].split("```")[0].strip()
+                                else:
+                                    json_str = raw_output.strip()
+                                # Parse and validate with Pydantic
+                                result = EvaluationResult.model_validate_json(json_str)
+                                #st.write("Debug: Parsed JSON to Pydantic model")
+                        
+                        # save to the temp file
+                        with open(temp_file, 'w', encoding='utf-8') as f:
+                            f.write(result.model_dump_json(indent=2))
+                        temp_results.append(temp_file)
+
+                        # Add to combined results
+                        all_evaluations.job_roles.extend(result.job_roles)
+                    except Exception as e:
+                        st.error(f"Error processing result: {str(e)}")
+                        st.write(f"Debug: Full error: {e.__class__.__name__}: {str(e)}")
+
+            # Save final combined results
+            if all_evaluations.job_roles:
+                        with open("data/candidate_evaluation_data.json", "w", encoding='utf-8') as f:
+                            f.write(all_evaluations.model_dump_json(indent=2))
+>>>>>>> refs/remotes/origin/dev_branch
         
-        # Display evaluation results
+    # Display job descriptions and resumes data if files exist
+    if os.path.exists("data/jd_data.json"):
+        st.subheader("Job Descriptions Data")
+        remove_json_tags("data/jd_data.json")
+        with open("data/jd_data.json", "r") as jd_file:
+            job_data = json.load(jd_file)
+            with st.expander("Show Job Descriptions Data"):
+                st.json(job_data, expanded=3)
+    
+    if os.path.exists("data/resumes_data.json"):
+        st.subheader("Resumes Data")
+        remove_json_tags("data/resumes_data.json")
+        with open("data/resumes_data.json", "r", encoding='utf-8') as resume_file:
+            try:
+                resume_data = json.load(resume_file)
+                #st.write("Debug: Resume data type:", type(resume_data))
+                #st.write("Debug: Resume data keys:", resume_data.keys() if isinstance(resume_data, dict) else "Not a dict")
+                
+                # Get resumes array from the correct structure
+                resumes = resume_data.get("resumes", []) if isinstance(resume_data, dict) else resume_data
+                st.write("Number of resumes found:", len(resumes))
+                
+                if isinstance(resumes, list):
+                    empty_resumes = []
+                    for entry in resumes:
+                        if isinstance(entry, dict):
+                            if 'name' in entry and any(entry.values()):
+                                with st.expander(entry["name"]):
+                                    st.json(entry, expanded=2)
+                            else:
+                                empty_resumes.append(entry.get('name', 'Unnamed Resume'))
+                        else:
+                            empty_resumes.append('Improperly formatted resume')
+                    
+                    if empty_resumes:
+                        st.warning("⚠️ The following resumes could not be properly processed:")
+                        for resume in empty_resumes:
+                            st.write(f"- {resume}")
+                else:
+                    st.error("❌ Resume data is not in the expected list format")
+                    st.write("Debug: Actual format:", type(resumes))
+            except json.JSONDecodeError as e:
+                st.error(f"❌ Error reading resume data: {str(e)}")
+                with open("data/resumes_data.json", "r") as f:
+                    st.text(f.read())  # Show raw file contents
+
+    # Display evaluation results if file exists
+    if os.path.exists("data/candidate_evaluation_data.json"):
         st.subheader("Evaluation Results")
         remove_json_tags("candidate_evaluation_data.json")
         with open("candidate_evaluation_data.json", "r") as eval_file:
             evaluation_data = json.load(eval_file)
-            # Generate pie chart for candidate scores
-                
-            # Display analyst comments in order of scores from highest to lowest
+            
+            # Display results
+            show_detailed = st.checkbox("Show Detailed Evaluation", value=False, key="eval_detail")
             for role in evaluation_data["job_roles"]:
+<<<<<<< HEAD
                 print(f"Available keys in role: {role.keys()}")  # Debugging step
                 role_name = role.get("role_name", "Unknown Role")  # Default if missing
                 candidates = role.get("candidates", [])  # Default to an empty list
@@ -202,10 +358,72 @@ def evaluate_candidates_resume():
                             else:
                                 st.write(f"**{key.replace('_', ' ').title()}**: {value}")
 
+=======
+                role_name = role["role_name"]
+                candidates = role["candidates"]
+                analyst_decision = role.get("analyst_decision", "")
+                st.divider()
+                if analyst_decision:
+                    st.write(f"<u>**Analyst Decision** for __{role_name}__ role </u> : {analyst_decision}", unsafe_allow_html=True)
+                    sorted_candidates = sorted(candidates, key=lambda x: x.get('score', 0), reverse=True)
+                if show_detailed:
+                    for candidate in sorted_candidates:
+                        with st.expander(f"**{candidate.get('name', 'No name available')}** (*{candidate.get('Interview_recommendation', 'Norecommendation available')}*)"):
+                            for key, value in candidate.items():
+                                if key == 'name':
+                                    continue
+                                if isinstance(value, list):
+                                    st.write(f"*{key.replace('_', ' ').title()}*: {', '.join(value)}")
+                                else:
+                                    st.write(f"**{key.replace('_', ' ').title()}**: {value}")
+                else:
+                    # Create and display table by default
+                    df = pd.DataFrame([{
+                        'Name': c.get('name', 'N/A'),
+                        'Score': c.get('score', 0),
+                        'Interview Recommendation': c.get('Interview_recommendation', 'N/A'),
+                        'Strengths Count': len(c.get('strengths', [])),
+                        'Weaknesses Count': len(c.get('weaknesses', [])),
+                        'Missing Skills Count': len(c.get('missing_skills', []))
+                    } for c in sorted_candidates])
+>>>>>>> refs/remotes/origin/dev_branch
                     
-
-
-        #st.json(evaluation_data, expanded=5)  # Ensure correct indexing
+                    st.write(f"### Candidates for {role_name}")
+                    if not df.empty:
+                        st.dataframe(
+                            df,
+                            hide_index=True,
+                            use_container_width=True,
+                            column_config={
+                                "Score": st.column_config.ProgressColumn(
+                                    "Score",
+                                    help="Candidate's match score",
+                                    format="%d%%",
+                                    min_value=0,
+                                    max_value=100,
+                                ),
+                                "Name": st.column_config.TextColumn(
+                                    "Candidate Name",
+                                    help="Name of the candidate"
+                                ),
+                                "Strengths Count": st.column_config.NumberColumn(
+                                    "Strengths",
+                                    help="Number of identified strengths"
+                                ),
+                                "Weaknesses Count": st.column_config.NumberColumn(
+                                    "Weaknesses",
+                                    help="Number of identified weaknesses"
+                                ),
+                                "Missing Skills Count": st.column_config.NumberColumn(
+                                    "Missing Skills",
+                                    help="Number of missing required skills"
+                                ),
+                                "Interview Recommendation": st.column_config.TextColumn(
+                                    "Recommendation",
+                                    help="Interview recommendation for the candidate"
+                                )
+                            }
+                        )
 
 if __name__ == "__main__":
     evaluate_candidates_resume()
