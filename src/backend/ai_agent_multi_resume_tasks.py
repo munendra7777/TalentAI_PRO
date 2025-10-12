@@ -20,7 +20,7 @@ def remove_old_files():
   print("Old files removed successfully.")
 
 # Remove old files if they exist
-#remove_old_files()
+remove_old_files()
 
 file_reader_tool = FileReadTool()
 file_writer_tool = FileWriterTool(overwrite=True)
