@@ -6,7 +6,7 @@ from crewai import Crew, Process
 from backend.ai_agent_multi_resume_tasks import AIAgentTasks
 from backend.ai_agent_multi_resume import AIAgents, embedder
 from backend.crew_tools import read_resume_data
-from components.resume_upload_form import read_pdf, read_docx, display_file, remove_json_tags
+from components.resume_upload_form import read_pdf, read_docx, display_file
 from components.pydantic_models import EvaluationResult, JobRole, Candidate
 import pandas as pd
 import plotly.express as px
@@ -16,21 +16,22 @@ import tempfile
 import json2markdown
 from backend.ai_agent_multi_resume_tasks import ResumeData
 from typing import List, Dict, Any
-# Load environment variables from .env file
-load_dotenv()
+from session_manager import SessionManager, safe_write_json_session, safe_read_json_session, remove_json_tags_session
+import logging
 
+# Load environment variables
+load_dotenv()
+logger = logging.getLogger(__name__)
 
 def extract_resumes(data):
     if isinstance(data, dict):
         return data.get("resumes", [])
     elif isinstance(data, list):
-        return data  # Assuming it's already a list of resumes
+        return data
     else:
         return []
 
-
-# Function to display a single resume in two columns
-
+# Keep all your existing display functions (display_resume, etc.) as they are...
 def display_resume(resume):
     """Display a single resume with robust error handling for different data types"""
     try:
@@ -48,7 +49,6 @@ def display_resume(resume):
             email = contact_details.get('email', 'N/A')
             linkedin = contact_details.get('linkedin', 'N/A')
         elif isinstance(contact_details, str):
-            # If contact_details is a string, display it as-is
             phone = email = linkedin = contact_details
         else:
             phone = email = linkedin = 'N/A'
@@ -105,7 +105,6 @@ def display_resume(resume):
                     if i >= len(skills) // 2:
                         st.markdown(f"- {skill}")
         elif isinstance(skills, str):
-            # Skills as a string
             st.markdown(skills)
         else:
             st.markdown("No skills information available")
@@ -211,23 +210,13 @@ def display_resume(resume):
         st.error(f"❌ Error in display_resume function: {str(e)}")
         st.write("Resume data structure:")
         st.json(resume, expanded=False)
-        
-        # Show which specific field might be causing the issue
-        #st.write("Debugging resume fields:")
-        if isinstance(resume, dict):
-            for key, value in resume.items():
-                st.write(f"- {key}: {type(value)} = {str(value)[:100]}...")
-        else:
-            st.write(f"Resume is not a dict: {type(resume)}")
 
-
-
-
-
+# Keep all your existing helper functions as they are...
 def read_resumes_from_files(files):
     resumes = []
-    skipped_files = []  # Track files that couldn't be processed
+    skipped_files = []
     st.write(f"Processing {len(files)} resume files")
+    
     for file in files:
         try:
             if file.type == "application/pdf":
@@ -236,21 +225,21 @@ def read_resumes_from_files(files):
                 content = read_docx(file)
             else:
                 content = file.read().decode("utf-8")
-            if content and content.strip():  # Check if content is not empty
+            
+            if content and content.strip():
                 resumes.append(content)
-                #st.write(f"Debug: Successfully processed {file.name}")
             else:
                 skipped_files.append((file.name, "Empty content"))
         except Exception as e:
             skipped_files.append((file.name, str(e)))
             st.error(f"Error reading file {file.name}: {e}")
-    # Show summary of skipped files
+
     if skipped_files:
-        st.warning("⚠️ The following files could not processed, check if they are corrupted!:")
+        st.warning("⚠️ The following files could not be processed:")
         for file_name, reason in skipped_files:
             st.write(f"- {file_name}: {reason}")
-            
-    processed = [resume for resume in resumes if resume]  # Filter out empty resumes
+
+    processed = [resume for resume in resumes if resume]
     st.write(f"Successfully processed {len(processed)} out of {len(files)} files")
     return processed
 
@@ -260,48 +249,72 @@ def read_job_requirements_from_files(files):
         job_requirements.append(display_file(file, file.type))
     return job_requirements
 
-def append_to_json_file(data, file_path):
-    if os.path.exists(file_path):
-        with open(file_path, "r") as file:
-            existing_data = json.load(file)
-        existing_data.extend(data)
-    else:
-        existing_data = data
-
-    with open(file_path, "w") as file:
-        json.dump(existing_data, file, indent=4)
-
 def evaluate_candidates_resume():
-    st.header("Evaluate Candidates' Resumes")
+    st.header("📊 Evaluate Candidates' Resumes")
     
-    resume_files = st.file_uploader("Upload resumes", type=["pdf", "docx", "txt"], accept_multiple_files=True)
-    job_files = st.file_uploader("Upload job requirements", type=["pdf", "docx", "txt"], accept_multiple_files=True)
-    job_requirements_text = st.text_area("Or paste job requirements here")
+    # Initialize session manager
+    session_manager = SessionManager()
+    
+    # Session info display
+    session_info = session_manager.get_session_info()
+    
+    
+    # File upload section
+    st.subheader("📁 Upload Files")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        resume_files = st.file_uploader(
+            "Upload resumes", 
+            type=["pdf", "docx", "txt"], 
+            accept_multiple_files=True,
+            help="Upload candidate resume files in PDF, DOCX, or TXT format"
+        )
+    
+    with col2:
+        job_files = st.file_uploader(
+            "Upload job requirements", 
+            type=["pdf", "docx", "txt"], 
+            accept_multiple_files=True,
+            help="Upload job description files in PDF, DOCX, or TXT format"
+        )
+    
+    job_requirements_text = st.text_area(
+        "Or paste job requirements here",
+        height=150,
+        help="Alternatively, you can paste job requirements directly"
+    )
 
-    if st.button("Process Resumes"):
-        if not resume_files or not job_files and not job_requirements_text:
-            st.error("Please upload both resumes and job requirements files or paste job requirements text in the area.")
+    # Process button with validation
+    if st.button("🚀 Process Resumes and Job Descriptions", type="primary"):
+        if not resume_files:
+            st.error("❌ Please upload resume files.")
             return
         
-        resumes = read_resumes_from_files(resume_files)
-        #for i, resume in enumerate(resumes):
-        #    st.write(f"--- Resume {i+1} ---")
-        #    st.text_area(f"Resume Content {i+1}", resume, height=200)
-        job_requirements = read_job_requirements_from_files(job_files)
-
-        if job_requirements_text:
-            job_requirements.append(job_requirements_text)
-        
-        if not resumes and not job_requirements:
-            st.error("No resumes found in the uploaded files.")
+        if not job_files and not job_requirements_text:
+            st.error("❌ Please upload job requirement files or paste job requirements text.")
             return
         
-        # Display the count of selected resumes and job descriptions
-        #st.write(f"Selected {len(resumes)} resumes for evaluation.")
-        #st.write(f"Selected {len(job_requirements)} job descriptions for evaluation.")
+        # Process files
+        with st.spinner("📄 Reading and processing files..."):
+            resumes = read_resumes_from_files(resume_files)
+            job_requirements = read_job_requirements_from_files(job_files) if job_files else []
+            
+            if job_requirements_text:
+                job_requirements.append(job_requirements_text)
+            
+            if not resumes:
+                st.error("❌ No valid resumes found in the uploaded files.")
+                return
+                
+            if not job_requirements:
+                st.error("❌ No valid job requirements found.")
+                return
         
-        # Initialize agents and tasks
-        tasks = AIAgentTasks()
+        st.success(f"✅ Processed {len(resumes)} resumes and {len(job_requirements)} job descriptions")
+        
+        # Initialize agents and tasks with session manager
+        tasks = AIAgentTasks()  # Now automatically uses session manager
         agents = AIAgents()
         
         # Create Crew for data extraction
@@ -315,72 +328,70 @@ def evaluate_candidates_resume():
             memory=False,
             process=Process.sequential,
             embedder=embedder,
-            cache=False,
-            llm_config=agents.llm_config
+            cache=False
         )
         
-        # Uncomment the following lines to process resumes
-        with st.spinner("Processing resumes and job descriptions..."):
-            
-            resume_extraction = asyncio.run(resume_extraction_crew.kickoff_async())
-        
-        # Clean the data
-        remove_json_tags("resumes_data.json")
-        with open("resumes_data.json", "r", encoding='utf-8') as resume_file:
-            resume_data = json.load(resume_file)
-        
-        remove_json_tags("jd_data.json")
-        with open("jd_data.json", "r") as jd_file:
-            job_data = json.load(jd_file)
+        # Process resumes and extract data
+        with st.spinner("🔍 Extracting and analyzing data..."):
+            try:
+                resume_extraction_result = asyncio.run(resume_extraction_crew.kickoff_async())
+                st.success("✅ Data extraction completed!")
+                
+                # IMPORTANT: Handle CrewAI output files
+                moved_files = tasks.post_process_crew_output(["resumes_data.json", "jd_data.json"])
+                st.write(f"📁 Moved {len(moved_files)} files to session: {moved_files}")
+                
+                # Load the processed data from session
+                resume_data = session_manager.load_json("resumes_data.json")
+                job_data = session_manager.load_json("jd_data.json")
+                
+                if not resume_data or not job_data:
+                    st.error("❌ Failed to extract data properly. Please try again.")
+                    # Debug: Show what files exist
+                    st.write("Files in session:", [f.name for f in session_info['files']])
+                    return
+                    
+            except Exception as e:
+                st.error(f"❌ Error during data extraction: {str(e)}")
+                logger.error(f"Data extraction error: {e}")
+                return
 
-        # Create Crew for analysis and evaluation
-        # Enhanced evaluation section with better error handling and debugging
-
-        # Create Crew for analysis and evaluation
-        with st.spinner("Evaluating candidates against job descriptions..."):
+        # Process evaluation
+        with st.spinner("🎯 Evaluating candidates against job descriptions..."):
             evaluate_candidate_agent = agents.evaluate_candidate()
-            all_evaluations = EvaluationResult(job_roles=[])  # Initialize with Pydantic model
-            temp_results = []
-            failed_jobs = []  # Track jobs that failed to process
-
-            # Process each job role separately
-            # Before the loop, ensure job_requirements is a list
+            all_evaluations = EvaluationResult(job_roles=[])
+            failed_jobs = []
+            
+            # Process job data
             job_requirements = job_data
             if isinstance(job_requirements, dict):
-                job_requirements = [job_requirements]
-
-            #st.write(f"🔍 Starting evaluation for {len(job_requirements)} job descriptions:")
-            
-            # Show all job titles first for debugging
-            for i, job in enumerate(job_requirements):
-                if isinstance(job, dict):
-                    title = job.get('title', f'Job {i+1}')
+                if "job_descriptions" in job_requirements:
+                    job_requirements = job_requirements["job_descriptions"]
+                elif "job_requirements" in job_requirements:
+                    job_requirements = [job_requirements["job_requirements"]]
                 else:
-                    title = f'Job {i+1} (String format)'
-                #st.write(f"  {i+1}. {title}")
+                    job_requirements = [job_requirements]
+
+            st.write(f"🔍 Processing {len(job_requirements)} job requirement(s)")
 
             for i, job_role in enumerate(job_requirements):
-                # Get job title with better error handling
+                # Handle nested job_requirements structure
+                if isinstance(job_role, dict) and 'job_requirements' in job_role:
+                    job_role = job_role['job_requirements']
+                
                 if isinstance(job_role, dict):
                     role_title = job_role.get('title', job_role.get('position', f'Job {i+1}'))
                 else:
                     role_title = f'Job {i+1} (String format)'
-                    
-                temp_file = os.path.join(tempfile.gettempdir(), f"eval_{role_title.replace(' ', '_').replace('/', '_')}.json")
                 
-                #st.write(f"📋 Processing job role {i+1}/{len(job_requirements)}: **{role_title}**")
+                st.write(f"🔄 Processing: **{role_title}**")
 
                 try:
                     # Convert string job_role to dict format if needed
-                    if isinstance(job_role, dict):
-                        job_role_dict = job_role
-                        #st.write(f"  ✅ Job data is properly formatted as dictionary")
-                    else:
-                        job_role_dict = {'title': role_title, 'description': str(job_role)}
-                        st.write(f"  ⚠️ Job data is string format, converted to dictionary")
-
-                    # Debug: Show job structure
-                    #st.write(f"  📊 Job data keys: {list(job_role_dict.keys())}")
+                    job_role_dict = job_role if isinstance(job_role, dict) else {
+                        'title': role_title, 
+                        'description': str(job_role)
+                    }
 
                     # Create evaluation task
                     evaluate_candidate_task = tasks.evaluate_candidate_task(
@@ -399,532 +410,363 @@ def evaluate_candidates_resume():
                         cache=False
                     )
                     
-                    # Process this job role with detailed progress tracking
-                    with st.spinner(f"Evaluating candidates ..."):
-                        try:
-                            st.write(f"  🚀 Starting crew execution ...")
-                            crew_result = asyncio.run(evaluation_crew.kickoff_async())
-                            st.write(f"  ✅ Crew execution completed.")
-                            
-                            # Get the output directly from crew_result
-                            task_output = evaluate_candidate_task.output
-                            
-                            if task_output and task_output.pydantic:
-                                # If we got a Pydantic model directly
-                                result = task_output.pydantic
-                                #st.write(f"  ✅ Got Pydantic model result for {role_title}")
-                            else:
-                                # Parse from raw output if needed
-                                raw_output = task_output.raw if task_output else crew_result.tasks[0].output.raw
-                                #st.write(f"  📝 Processing raw output for {role_title} (type: {type(raw_output)})")
-                                
-                                if isinstance(raw_output, str):
-                                    if "```json" in raw_output:
-                                        json_str = raw_output.split("```json")[1].split("```")[0].strip()
-                                    else:
-                                        json_str = raw_output.strip()
-                                    # Parse and validate with Pydantic
-                                    result = EvaluationResult.model_validate_json(json_str)
-                                    #st.write(f"  ✅ Successfully parsed JSON for {role_title}")
-                                else:
-                                    st.error(f"  ❌ Unexpected output type for {role_title}: {type(raw_output)}")
-                                    failed_jobs.append((role_title, f"Unexpected output type: {type(raw_output)}"))
-                                    continue
-                            
-                            # Validate that we got results
-                            if result and result.job_roles:
-                                st.write(f"  ✅ Got {len(result.job_roles)} job role results ")
-                                temp_results.append(result)
-
-                                # Add to combined results
-                                all_evaluations.job_roles.extend(result.job_roles)
-                                st.success(f"  🎉 Successfully processed {role_title} - added {len(result.job_roles)} job role(s)")
-                            else:
-                                st.error(f"  ❌ No job roles found in result for {role_title}")
-                                failed_jobs.append((role_title, "No job roles in result"))
-                                
-                        except Exception as crew_error:
-                            st.error(f"  ❌ Crew execution failed for {role_title}: {str(crew_error)}")
-                            failed_jobs.append((role_title, f"Crew execution error: {str(crew_error)}"))
-                            # Continue to next job instead of stopping
-                            continue
-                            
-                except Exception as job_error:
-                    st.error(f"❌ Error setting up evaluation for {role_title}: {str(job_error)}")
-                    failed_jobs.append((role_title, f"Setup error: {str(job_error)}"))
-                    # Continue to next job instead of stopping
+                    # Execute evaluation
+                    crew_result = asyncio.run(evaluation_crew.kickoff_async())
+                    
+                    # IMPORTANT: Handle CrewAI output files for evaluation
+                    moved_eval_files = tasks.post_process_crew_output(["candidate_evaluation_data.json"])
+                    if moved_eval_files:
+                        st.write(f"📁 Moved evaluation files: {moved_eval_files}")
+                    
+                    # Load evaluation result from session
+                    eval_result = session_manager.load_json("candidate_evaluation_data.json")
+                    if eval_result and "job_roles" in eval_result:
+                        all_evaluations.job_roles.extend(eval_result["job_roles"])
+                        st.success(f"✅ Completed: **{role_title}** ({len(eval_result['job_roles'])} job roles)")
+                    else:
+                        failed_jobs.append((role_title, "No job roles in result"))
+                        
+                except Exception as eval_error:
+                    st.error(f"❌ Error evaluating {role_title}: {str(eval_error)}")
+                    failed_jobs.append((role_title, f"Evaluation error: {str(eval_error)}"))
                     continue
 
-            # Show summary of processing
-            #st.write("📊 **Evaluation Summary:**")
-            #st.write(f"  ✅ Successfully processed: {len(all_evaluations.job_roles)} job roles")
-            #st.write(f"  ❌ Failed to process: {len(failed_jobs)} job roles")
-            
-            if failed_jobs:
-                st.warning("⚠️ **Failed Job Descriptions:**")
-                for job_title, error_msg in failed_jobs:
-                    st.write(f"  - **{job_title}**: {error_msg}")
-
-            # Save final combined results
+            # Save combined results to session
             if all_evaluations.job_roles:
                 try:
                     evaluation_data = json.loads(all_evaluations.model_dump_json())
-                    with open("candidate_evaluation_data.json", "w", encoding='utf-8') as f:
-                        json.dump(evaluation_data, f, indent=4)
+                    session_manager.save_json("candidate_evaluation_data.json", evaluation_data)
                     st.success(f"🎉 **Evaluation completed!** Results saved for {len(all_evaluations.job_roles)} job roles.")
                     
-                    # Show which job roles were successfully processed
-                    #st.write("✅ **Successfully evaluated job roles:**")
+                    # Show success summary
                     for job_role in all_evaluations.job_roles:
                         role_name = job_role.get('role_name', 'Unknown Role')
                         candidate_count = len(job_role.get('candidates', []))
-                        #st.write(f"  - **{role_name}**: {candidate_count} candidates evaluated")
+                        st.write(f"  ✅ **{role_name}**: {candidate_count} candidates evaluated")
                         
                 except Exception as save_error:
-                    print(f"❌ Failed to save final evaluation results: {str(save_error)}")
+                    st.error(f"❌ Failed to save evaluation results: {str(save_error)}")
+                    logger.error(f"Save error: {save_error}")
             else:
-                st.error("❌ **No evaluation results were generated for any job descriptions!**")
+                st.error("❌ No evaluation results generated!")
                 
-                # Debug: Show the job data structure
-                #st.write("🔍 **Debug: Job Requirements Structure:**")
-                for i, job in enumerate(job_requirements):
-                    st.write(f"Job {i+1}:")
-                    if isinstance(job, dict):
-                        st.write(f"  Type: Dictionary")
-                        st.write(f"  Keys: {list(job.keys())}")
-                        st.write(f"  Title: {job.get('title', 'No title')}")
-                    else:
-                        st.write(f"  Type: {type(job)}")
-                        st.write(f"  Content: {str(job)[:100]}...")
-        
+            if failed_jobs:
+                st.warning("⚠️ **Some job descriptions failed to process:**")
+                for job_title, error_msg in failed_jobs:
+                    st.write(f"  - **{job_title}**: {error_msg}")
 
-    # Display job descriptions and resumes data if files exist
-    # Display job descriptions and resumes data if files exist
-    if os.path.exists("jd_data.json"):
-        st.subheader("Job Descriptions Data")
-        remove_json_tags("jd_data.json")
+    # Display session data if available
+    display_session_data(session_manager)
+
+def display_session_data(session_manager):
+    """Display all session data with proper formatting"""
+    
+    # Display job descriptions if available
+    if session_manager.file_exists("jd_data.json"):
+        st.subheader("💼 Job Descriptions Data")
+        job_data = session_manager.load_json("jd_data.json")
         
-        try:
-            with open("jd_data.json", "r", encoding='utf-8') as jd_file:
-                job_data = json.load(jd_file)
-                
-            # DEBUG: Show the actual structure of job_data
-            #st.write("🔍 **Debug Info:**")
-            #st.write(f"- Job data type: {type(job_data)}")
-            if isinstance(job_data, dict):
-                print(f"- Available Job Descriptions:")
-            elif isinstance(job_data, list):
-                st.write(f"- Job data is a list with {len(job_data)} items")
-            
-            # Add a toggle to switch between Formatted and JSON view for Job Descriptions
+        if job_data:
             jd_display_mode = st.toggle("Show as JSON instead of formatted view", value=False, key="jd_display_mode")
             
             if jd_display_mode:
-                # Show JSON view when toggle is ON
                 with st.expander("Job Descriptions Data (JSON Format)", expanded=True):
                     st.json(job_data, expanded=True)
             else:
-                # Show formatted view when toggle is OFF (default)
-                # Try multiple possible keys and structures
-                job_descriptions = []
-                
-                if isinstance(job_data, dict):
-                    # Try different possible key names
-                    possible_keys = ["job_descriptions", "job_requirements", "jobs", "jd", "positions"]
-                    found_key = None
-                    
-                    for key in possible_keys:
-                        if key in job_data:
-                            job_descriptions = job_data[key]
-                            found_key = key
-                            #st.write(f"✅ Found job data under key: '{key}'")
-                            break
-                    
-                    if not found_key:
-                        # If no standard key found, check if job_data itself looks like a job description
-                        if any(field in job_data for field in ['title', 'position', 'description', 'company']):
-                            job_descriptions = [job_data]  # Single job as the root object
-                            st.write("✅ Found single job description as root object")
-                
-                elif isinstance(job_data, list):
-                    # Job data is directly a list
-                    job_descriptions = job_data
-                    st.write(f"✅ Found job descriptions as direct list")
-                
-                # Ensure job_descriptions is a list
-                if isinstance(job_descriptions, dict):
-                    job_descriptions = [job_descriptions]
-                elif not isinstance(job_descriptions, list):
-                    st.error(f"❌ Could not convert job descriptions to list: {type(job_descriptions)}")
-                    job_descriptions = []
-                
-                #st.write(f"📋 **Found {len(job_descriptions)} job description(s)**")
-                
-                if not job_descriptions:
-                    st.warning("⚠️ No job descriptions found. Check the JSON structure above.")
-                    st.write("💡 **Tip:** Toggle to JSON view to see the raw data structure.")
-                
-                for i, job_item in enumerate(job_descriptions):
-                    # Handle nested job_requirements structure
-                    job = job_item
-                    
-                    # Check if job_item has nested job_requirements
-                    if isinstance(job_item, dict) and 'job_requirements' in job_item:
-                        job = job_item['job_requirements']
-                        #st.write(f"🔧 Extracting nested job_requirements for job {i+1}")
-                    
-                    # Convert string to dict if needed
-                    if isinstance(job, str):
-                        job = {"title": f"Job Description {i+1}", "description": job}
-                    elif not isinstance(job, dict):
-                        st.warning(f"⚠️ Job {i+1} is not in expected format: {type(job)}")
-                        st.write(f"Content: {str(job)[:100]}...")
-                        continue
-                    
-                    # Get job title with multiple fallbacks
-                    job_title = (job.get('title') or 
-                            job.get('position') or 
-                            job.get('job_title') or 
-                            job.get('role') or 
-                            f'Job Description {i+1}')
-                    
-                    company = job.get('company', 'Not specified')
-                    
-                    with st.expander(f"**{job_title}** - {company}", expanded=False):
-                        # Create columns for better organization
-                        col1, col2 = st.columns(2)
-                        
-                        # Basic Information
-                        with col1:
-                            st.subheader("Basic Information")
-                            
-                            if job.get('company'):
-                                st.write(f"**Company:** {job['company']}")
-                            if job.get('title') or job.get('position'):
-                                position = job.get('title') or job.get('position')
-                                st.write(f"**Position:** {position}")
-                            if job.get('location'):
-                                st.write(f"**Location:** {job['location']}")
-                            if job.get('pay_range') or job.get('salary'):
-                                salary = job.get('pay_range') or job.get('salary')
-                                if salary:  # Only show if not None/empty
-                                    st.write(f"**Salary Range:** {salary}")
-                            
-                            # Full Description
-                            if job.get('description'):
-                                st.subheader("Job Description")
-                                st.write(job['description'])
-                            
-                            # Responsibilities
-                            if job.get('responsibilities'):
-                                st.subheader("Responsibilities")
-                                responsibilities = job['responsibilities']
-                                if isinstance(responsibilities, list):
-                                    for resp in responsibilities:
-                                        st.write(f"• {resp}")
-                                elif isinstance(responsibilities, str):
-                                    st.write(responsibilities)
-                                else:
-                                    st.write(str(responsibilities))
-                        
-                        # Requirements
-                        with col2:
-                            st.subheader("Requirements")
-                            
-                            if job.get('education_required'):
-                                st.markdown("##### **Education Required:**")
-                                education = job['education_required']
-                                if isinstance(education, list):
-                                    for edu in education:
-                                        st.write(f"• {edu}")
-                                elif education:  # Only show if not None/empty
-                                    st.write(education)
-                            
-                            if job.get('experience_required'):
-                                st.markdown("##### **Experience Required:**")
-                                experience = job['experience_required']
-                                if isinstance(experience, list):
-                                    for exp in experience:
-                                        st.write(f"• {exp}")
-                                elif experience:  # Only show if not None/empty
-                                    st.write(experience)
-                            
-                            # Handle skills_required (which can be a nested dict structure)
-                            if job.get('skills_required'):
-                                st.markdown("##### **Skills Required:**")
-                                skills = job['skills_required']
-                                
-                                if isinstance(skills, dict):
-                                    # Handle nested skills structure like in your data
-                                    for skill_category, skill_list in skills.items():
-                                        if skill_list:  # Only show categories that have skills
-                                            st.markdown(f"**{skill_category}:**")
-                                            if isinstance(skill_list, list):
-                                                for skill in skill_list:
-                                                    st.write(f"  • {skill}")
-                                            else:
-                                                st.write(f"  • {skill_list}")
-                                elif isinstance(skills, list):
-                                    for skill in skills:
-                                        st.write(f"• {skill}")
-                                elif isinstance(skills, str):
-                                    st.write(skills)
-                                else:
-                                    st.write(str(skills))
-                            
-                            # Additional requirements with multiple key names
-                            qualifications = (job.get('qualifications') or 
-                                            job.get('requirements') or 
-                                            job.get('preferred_qualifications'))
-                            if qualifications:
-                                st.markdown("##### **Additional Qualifications:**")
-                                if isinstance(qualifications, list):
-                                    for qual in qualifications:
-                                        st.write(f"• {qual}")
-                                else:
-                                    st.write(qualifications)
+                display_formatted_job_descriptions(job_data)
+
+    # Display resumes if available
+    if session_manager.file_exists("resumes_data.json"):
+        st.subheader("📄 Resumes Data")
+        resume_data = session_manager.load_json("resumes_data.json")
         
-        except json.JSONDecodeError as e:
-            st.error(f"❌ Error parsing job descriptions JSON: {str(e)}")
-            st.write("Raw file contents (first 500 chars):")
+        if resume_data:
+            resume_display_mode = st.toggle("Display Resumes as Formatted text", value=True, key="resume_display_mode")
+            
+            if resume_display_mode:
+                display_formatted_resumes(resume_data)
+            else:
+                with st.expander("Resumes Data (JSON Format)", expanded=True):
+                    st.json(resume_data, expanded=True)
+
+    # Display evaluation results if available
+    if session_manager.file_exists("candidate_evaluation_data.json"):
+        st.subheader("📊 Evaluation Results")
+        evaluation_data = session_manager.load_json("candidate_evaluation_data.json")
+        
+        if evaluation_data and "job_roles" in evaluation_data:
+            display_evaluation_results(evaluation_data)
+            
+            # Add download options
+            st.markdown("---")
+            st.subheader("📥 Download Options")
+            
+            col1, col2, col3 = st.columns(3)
+            
+            with col2:
+                include_resumes = st.checkbox("Include Resume Data", value=False, key="include_resumes_download")
+            
+            with col3:
+                include_jobs = st.checkbox("Include Job Descriptions", value=False, key="include_jobs_download")
+            
+            with col1:
+                if st.button("📦 Download Analysis Results", type="primary"):
+                    create_download_package(session_manager, evaluation_data, include_resumes, include_jobs)
+
+def display_formatted_job_descriptions(job_data):
+    """Display job descriptions in formatted view"""
+    # Extract job descriptions from various possible structures
+    job_descriptions = []
+    
+    if isinstance(job_data, dict):
+        possible_keys = ["job_descriptions", "job_requirements", "jobs", "jd", "positions"]
+        found_key = None
+        
+        for key in possible_keys:
+            if key in job_data:
+                job_descriptions = job_data[key]
+                found_key = key
+                break
+        
+        if not found_key:
+            if any(field in job_data for field in ['title', 'position', 'description', 'company']):
+                job_descriptions = [job_data]
+    elif isinstance(job_data, list):
+        job_descriptions = job_data
+    
+    # Ensure it's a list
+    if isinstance(job_descriptions, dict):
+        job_descriptions = [job_descriptions]
+    
+    st.write(f"📋 **Found {len(job_descriptions)} job description(s)**")
+    
+    for i, job_item in enumerate(job_descriptions):
+        # Handle nested job_requirements structure
+        job = job_item
+        
+        if isinstance(job_item, dict) and 'job_requirements' in job_item:
+            job = job_item['job_requirements']
+        
+        if not isinstance(job, dict):
+            continue
+        
+        job_title = (job.get('title') or job.get('position') or 
+                    job.get('job_title') or job.get('role') or 
+                    f'Job Description {i+1}')
+        
+        company = job.get('company', 'Not specified')
+        
+        with st.expander(f"**{job_title}** - {company}", expanded=False):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.subheader("Basic Information")
+                
+                if job.get('company'):
+                    st.write(f"**Company:** {job['company']}")
+                if job.get('title') or job.get('position'):
+                    position = job.get('title') or job.get('position')
+                    st.write(f"**Position:** {position}")
+                if job.get('location'):
+                    st.write(f"**Location:** {job['location']}")
+                if job.get('pay_range') or job.get('salary'):
+                    salary = job.get('pay_range') or job.get('salary')
+                    if salary:
+                        st.write(f"**Salary Range:** {salary}")
+                
+                if job.get('description'):
+                    st.subheader("Job Description")
+                    st.write(job['description'])
+                
+                if job.get('responsibilities'):
+                    st.subheader("Responsibilities")
+                    responsibilities = job['responsibilities']
+                    if isinstance(responsibilities, list):
+                        for resp in responsibilities:
+                            st.write(f"• {resp}")
+                    else:
+                        st.write(responsibilities)
+            
+            with col2:
+                st.subheader("Requirements")
+                
+                if job.get('education_required'):
+                    st.markdown("##### **Education Required:**")
+                    education = job['education_required']
+                    if isinstance(education, list):
+                        for edu in education:
+                            st.write(f"• {edu}")
+                    elif education:
+                        st.write(education)
+                
+                if job.get('experience_required'):
+                    st.markdown("##### **Experience Required:**")
+                    experience = job['experience_required']
+                    if isinstance(experience, list):
+                        for exp in experience:
+                            st.write(f"• {exp}")
+                    elif experience:
+                        st.write(experience)
+                
+                if job.get('skills_required'):
+                    st.markdown("##### **Skills Required:**")
+                    skills = job['skills_required']
+                    
+                    if isinstance(skills, dict):
+                        for skill_category, skill_list in skills.items():
+                            if skill_list:
+                                st.markdown(f"**{skill_category}:**")
+                                if isinstance(skill_list, list):
+                                    for skill in skill_list:
+                                        st.write(f"  • {skill}")
+                                else:
+                                    st.write(f"  • {skill_list}")
+                    elif isinstance(skills, list):
+                        for skill in skills:
+                            st.write(f"• {skill}")
+                    elif skills:
+                        st.write(skills)
+
+def display_formatted_resumes(resume_data):
+    """Display resumes in formatted view"""
+    resumes_list = extract_resumes(resume_data)
+    
+    if not resumes_list:
+        st.warning("⚠️ No resumes found in the data.")
+        return
+    
+    st.write(f"📋 **Found {len(resumes_list)} resume(s)**")
+    
+    for i, resume in enumerate(resumes_list):
+        resume_name = resume.get('name', f'Resume {i+1}') if isinstance(resume, dict) else f'Resume {i+1}'
+        
+        with st.expander(f"**{resume_name}**", expanded=False):
+            if isinstance(resume, dict):
+                display_resume(resume)
+            else:
+                st.error(f"❌ Cannot display resume - invalid format: {type(resume)}")
+
+def display_evaluation_results(evaluation_data):
+    """Display evaluation results"""
+    show_detailed = st.checkbox("Show Detailed Evaluation", value=False, key="eval_detail")
+    
+    for role in evaluation_data["job_roles"]:
+        role_name = role["role_name"]
+        candidates = role["candidates"]
+        analyst_decision = role.get("analyst_decision", "")
+        
+        # Sort candidates by score
+        sorted_candidates = sorted(candidates, key=lambda x: x.get('score', 0), reverse=True)
+        
+        st.divider()
+        
+        if analyst_decision:
+            st.write(f"<u>**Analyst Decision** for __{role_name}__ role </u> : {analyst_decision}", 
+                    unsafe_allow_html=True)
+            
+        if show_detailed:
+            # Show detailed candidate information
+            for candidate in sorted_candidates:
+                candidate_name = candidate.get('name', 'No name available')
+                interview_rec = candidate.get('Interview_recommendation', 'No recommendation available')
+                
+                with st.expander(f"**{candidate_name}** (*{interview_rec}*)"):
+                    for key, value in candidate.items():
+                        if key == 'name':
+                            continue
+                        if isinstance(value, list):
+                            st.write(f"*{key.replace('_', ' ').title()}*: {', '.join(value)}")
+                        else:
+                            st.write(f"**{key.replace('_', ' ').title()}**: {value}")
+        else:
+            # Show summary table
             try:
-                with open("jd_data.json", "r", encoding='utf-8') as f:
-                    raw_content = f.read()
-                    st.text(raw_content[:500] + ("..." if len(raw_content) > 500 else ""))
-            except Exception:
-                st.error("Could not read raw file")
+                df = pd.DataFrame([{
+                    'Name': c.get('name', 'N/A'),
+                    'Score': c.get('score', 0),
+                    'Interview Recommendation': c.get('Interview_recommendation', 'N/A'),
+                    'Strengths Count': len(c.get('strengths', [])),
+                    'Weaknesses Count': len(c.get('weaknesses', [])),
+                    'Missing Skills Count': len(c.get('missing_skills', []))
+                } for c in sorted_candidates])
+                
+                st.write(f"### Candidates for {role_name}")
+                
+                if not df.empty:
+                    st.dataframe(
+                        df,
+                        hide_index=True,
+                        use_container_width=True,
+                        column_config={
+                            "Score": st.column_config.ProgressColumn(
+                                "Score",
+                                help="Candidate's match score",
+                                format="%d%%",
+                                min_value=0,
+                                max_value=100,
+                            ),
+                            "Name": st.column_config.TextColumn(
+                                "Candidate Name",
+                                help="Name of the candidate"
+                            ),
+                            "Strengths Count": st.column_config.NumberColumn(
+                                "Strengths",
+                                help="Number of identified strengths"
+                            ),
+                            "Weaknesses Count": st.column_config.NumberColumn(
+                                "Weaknesses",
+                                help="Number of identified weaknesses"
+                            ),
+                            "Missing Skills Count": st.column_config.NumberColumn(
+                                "Missing Skills",
+                                help="Number of missing required skills"
+                            ),
+                            "Interview Recommendation": st.column_config.TextColumn(
+                                "Recommendation",
+                                help="Interview recommendation"
+                            )
+                        }
+                    )
+                else:
+                    st.warning(f"⚠️ No candidate data found for {role_name}")
+                    
+            except Exception as table_error:
+                st.error(f"❌ Error creating table for {role_name}: {str(table_error)}")
+                st.write("Raw candidate data:")
+                for i, candidate in enumerate(sorted_candidates):
+                    st.write(f"Candidate {i+1}: {candidate}")
+
+def create_download_package(session_manager, evaluation_data, include_resumes, include_jobs):
+    """Create and offer download package"""
+    try:
+        combined_data = {
+            "evaluation_results": evaluation_data,
+            "session_id": session_manager.session_manager.session_id if hasattr(session_manager, 'session_manager') else session_manager.get_session_info()['session_id'],
+            "generated_at": pd.Timestamp.now().isoformat()
+        }
         
-        except Exception as e:
-            st.error(f"❌ Error loading job descriptions: {str(e)}")
-            import traceback
-            st.code(traceback.format_exc())
-
-    else:
-        st.info("📄 No job descriptions data found. Upload and process job requirements first.")
-
-
-
-
-
-    # Enhanced resume display section with better error handling
-    if os.path.exists("resumes_data.json"):
-        st.subheader("Resumes Data")
+        if include_resumes and session_manager.file_exists("resumes_data.json"):
+            combined_data["resumes"] = session_manager.load_json("resumes_data.json")
         
-        # Clean the JSON tags FIRST, before opening the file
-        try:
-            remove_json_tags("resumes_data.json")
-        except Exception as e:
-            st.warning(f"⚠️ Error cleaning JSON tags: {str(e)}")
+        if include_jobs and session_manager.file_exists("jd_data.json"):
+            combined_data["job_descriptions"] = session_manager.load_json("jd_data.json")
         
-        # Now read the cleaned file
-        try:
-            with open("resumes_data.json", "r", encoding='utf-8') as resume_file:
-                resume_data = json.load(resume_file)
-                
-            #st.write("Debug: Resume data type:", type(resume_data))
-            
-            # Handle different possible data structures from AI agents
-            resumes = []
-            
-            if isinstance(resume_data, dict):
-                #st.write("Debug: Resume data keys:", list(resume_data.keys()))
-                
-                # Case 1: Expected format {"resumes": [...]}
-                if "resumes" in resume_data and isinstance(resume_data["resumes"], list):
-                    resumes = resume_data["resumes"]
-                    #st.write(f"✅ Found standard format with 'resumes' key: {len(resumes)} items")
-                
-                # Case 2: Single resume object {"name": "John", "skills": {...}}
-                elif "name" in resume_data or "contact_details" in resume_data or "skills" in resume_data:
-                    resumes = [resume_data]  # Wrap single resume in list
-                    #st.write(f"✅ Found single resume object, converted to list: 1 item")
-                    #st.write(f"✅ Resume name: {resume_data.get('name', 'Unknown')}")
-                
-                # Case 3: Multiple resume objects as separate keys
-                else:
-                    # Check if values look like resume objects
-                    potential_resumes = []
-                    for key, value in resume_data.items():
-                        if isinstance(value, dict) and ("name" in value or "contact_details" in value):
-                            potential_resumes.append(value)
-                    
-                    if potential_resumes:
-                        resumes = potential_resumes
-                        #st.write(f"✅ Found resume objects as separate keys: {len(resumes)} items")
-                    else:
-                        st.warning("⚠️ Dict format not recognized as resume data")
-                        
-            elif isinstance(resume_data, list):
-                # Case 4: List of resume objects [{"name": "John", ...}, {"name": "Jane", ...}]
-                resumes = resume_data
-                #st.write(f"✅ Found list format: {len(resumes)} items")
-                
-            else:
-                st.error(f"❌ Unexpected data type: {type(resume_data)}")
-                st.json(resume_data, expanded=True)
-                
-            st.write("Extracted resumes count:", len(resumes))
-
-            # Validate that we actually have resume-like objects
-            valid_resumes = []
-            for i, resume in enumerate(resumes):            
-                if isinstance(resume, dict):
-                    # Check if it has at least one resume-like field
-                    resume_fields = ["name", "contact_details", "skills", "experience", "education", "objective"]
-                    found_fields = [field for field in resume_fields if field in resume]
-                    
-                    if found_fields:
-                        valid_resumes.append(resume)
-                        resume_name = resume.get('name', 'Unknown')
-                        #st.write(f"✅ Resume {i+1}: Valid resume for '{resume_name}' (fields: {found_fields})")
-                    else:
-                        st.warning(f"⚠️ Resume {i+1}: No recognized resume fields found")
-                else:
-                    st.error(f"❌ Resume {i+1}: Expected dict, got {type(resume)}")
-            
-            resumes = valid_resumes
-            #st.write(f"Final valid resumes count: {len(resumes)}")
-
-            if resumes:
-                # Add a toggle to switch between JSON and Markdown view for Resumes
-                resume_display_mode = st.toggle("Display Resumes as Formatted text", value=True, key="resume_display_mode")
-
-                if resume_display_mode:
-                    # Display resumes in a formatted view - ensure all resumes are processed
-                    #st.write(f"📋 Displaying {len(resumes)} resumes in formatted view:")
-                    
-                    for i, resume in enumerate(resumes):
-                        resume_name = resume.get('name', f'Resume {i+1}') if isinstance(resume, dict) else f'Resume {i+1}'
-                        #st.write(f"Processing resume {i+1}: {resume_name}")
-                        
-                        try:
-                            # Use a unique key for each expander to avoid conflicts
-                            with st.expander(f"**{resume_name}**", expanded=False):
-                                # Double-check that resume is a dict before calling display_resume
-                                if isinstance(resume, dict):
-                                    # Call the enhanced display_resume function with built-in error handling
-                                    display_resume(resume)
-                                else:
-                                    st.error(f"❌ Cannot display resume - invalid type: {type(resume)}")
-                                    st.write("Invalid resume data:", resume)
-                                    
-                        except Exception as expander_error:
-                            st.error(f"❌ Critical error creating expander for resume {i+1}: {str(expander_error)}")
-                            # Show the problematic resume data
-                            st.write(f"Problematic resume data for {resume_name}:")
-                            st.json(resume, expanded=False)
-                            # Continue with next resume instead of breaking
-                            continue
-                    
-                    #st.write(f"✅ Completed processing {len(resumes)} resumes")
-                
-                else:
-                    # Display resumes in JSON format
-                    #st.write(f"📋 Displaying {len(resumes)} resumes in JSON view:")
-                    
-                    for i, entry in enumerate(resumes):
-                        entry_name = entry.get('name', f'Resume {i+1}') if isinstance(entry, dict) else f'Resume {i+1}'
-                        #st.write(f"Processing JSON view for resume {i+1}: {entry_name}")
-                        
-                        try:
-                            # Use a unique key for each JSON expander
-                            with st.expander(f"**{entry_name} (JSON)**", expanded=False):
-                                st.json(entry, expanded=True)
-                        except Exception as json_error:
-                            st.error(f"❌ Error displaying JSON for resume {i+1}: {str(json_error)}")
-                            # Continue with next resume instead of breaking
-                            continue
-                    
-                    #st.write(f"✅ Completed JSON display for {len(resumes)} resumes")
-            
-            else:
-                st.error("❌ No valid resumes found in the data structure")
-                
-        except json.JSONDecodeError as e:
-            st.error(f"❌ JSON decode error: {str(e)}")
-            
-        except Exception as e:
-            st.error(f"❌ Error reading resume data: {str(e)}")
-            import traceback
-            st.code(traceback.format_exc())
-            
-    else:
-        st.warning("📁 resumes_data.json file not found")
-
-    # Display evaluation results if file exists
-    if os.path.exists("candidate_evaluation_data.json"):
-        st.subheader("Evaluation Results")
-        remove_json_tags("candidate_evaluation_data.json")
-        with open("candidate_evaluation_data.json", "r") as eval_file:
-            evaluation_data = json.load(eval_file)
-            
-            # Display results
-            show_detailed = st.checkbox("Show Detailed Evaluation", value=False, key="eval_detail")
-            for role in evaluation_data["job_roles"]:
-                role_name = role["role_name"]
-                candidates = role["candidates"]
-                analyst_decision = role.get("analyst_decision", "")
-                st.divider()
-                if analyst_decision:
-                    st.write(f"<u>**Analyst Decision** for __{role_name}__ role </u> : {analyst_decision}", unsafe_allow_html=True)
-                    sorted_candidates = sorted(candidates, key=lambda x: x.get('score', 0), reverse=True)
-                if show_detailed:
-                    for candidate in sorted_candidates:
-                        with st.expander(f"**{candidate.get('name', 'No name available')}** (*{candidate.get('Interview_recommendation', 'Norecommendation available')}*)"):
-                            for key, value in candidate.items():
-                                if key == 'name':
-                                    continue
-                                if isinstance(value, list):
-                                    st.write(f"*{key.replace('_', ' ').title()}*: {', '.join(value)}")
-                                else:
-                                    st.write(f"**{key.replace('_', ' ').title()}**: {value}")
-                else:
-                    # Create and display table by default
-                    df = pd.DataFrame([{
-                        'Name': c.get('name', 'N/A'),
-                        'Score': c.get('score', 0),
-                        'Interview Recommendation': c.get('Interview_recommendation', 'N/A'),
-                        'Strengths Count': len(c.get('strengths', [])),
-                        'Weaknesses Count': len(c.get('weaknesses', [])),
-                        'Missing Skills Count': len(c.get('missing_skills', []))
-                    } for c in sorted_candidates])
-                    
-                    st.write(f"### Candidates for {role_name}")
-                    if not df.empty:
-                        st.dataframe(
-                            df,
-                            hide_index=True,
-                            use_container_width=True,
-                            column_config={
-                                "Score": st.column_config.ProgressColumn(
-                                    "Score",
-                                    help="Candidate's match score",
-                                    format="%d%%",
-                                    min_value=0,
-                                    max_value=100,
-                                ),
-                                "Name": st.column_config.TextColumn(
-                                    "Candidate Name",
-                                    help="Name of the candidate"
-                                ),
-                                "Strengths Count": st.column_config.NumberColumn(
-                                    "Strengths",
-                                    help="Number of identified strengths"
-                                ),
-                                "Weaknesses Count": st.column_config.NumberColumn(
-                                    "Weaknesses",
-                                    help="Number of identified weaknesses"
-                                ),
-                                "Missing Skills Count": st.column_config.NumberColumn(
-                                    "Missing Skills",
-                                    help="Number of missing required skills"
-                                ),
-                                "Interview Recommendation": st.column_config.TextColumn(
-                                    "Recommendation",
-                                    help="Interview recommendation for the candidate"
-                                )
-                            }
-                        )
+        combined_json = json.dumps(combined_data, indent=2)
+        session_id_short = combined_data.get("session_id", "unknown")[:8]
+        
+        st.download_button(
+            label="💾 Click to Download Analysis Package",
+            data=combined_json,
+            file_name=f"analysis_results_{session_id_short}.json",
+            mime="application/json",
+            help="Download complete analysis results with selected additional data"
+        )
+        
+        st.success("✅ Download package ready!")
+        
+    except Exception as e:
+        st.error(f"❌ Error creating download: {str(e)}")
+        logger.error(f"Download error: {e}")
 
 if __name__ == "__main__":
     evaluate_candidates_resume()

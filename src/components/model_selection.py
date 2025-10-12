@@ -1,3 +1,5 @@
+import streamlit as st
+
 def get_model_options():
     return {
         "LLM": ["GPT-3", "GPT-4", "BERT", "T5"],

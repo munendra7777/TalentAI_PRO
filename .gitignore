@@ -6,3 +6,4 @@ __pycache__/
 *.pyc
 ../.talent_ai_venv/
 new_venv/
+.DS_Store/

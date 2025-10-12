@@ -4,48 +4,80 @@ from crewai import Crew, Process
 from backend.ai_agent_multi_resume_tasks import AIAgentTasks
 from backend.ai_agent_multi_resume import AIAgents, embedder
 from backend.crew_tools import read_resume_data
-from components.resume_upload_form import remove_json_tags
+from session_manager import SessionManager, remove_json_tags_session, handle_crewai_output_files
 import json
 import pandas as pd
 import yaml
 import os
 import asyncio
+import logging
 
-
-# Load environment variables from .env file
+# Load environment variables
 load_dotenv()
-
+logger = logging.getLogger(__name__)
 
 def interview_questions():
     st.subheader("🎯 Interview Questions Generator")
     
-    # Check if required files exist
-    if not os.path.exists("jd_data.json"):
-        st.error("❌ Job descriptions data not found. Please process job requirements first.")
+    # Initialize session manager
+    session_manager = SessionManager()
+    
+    # Session info
+    session_info = session_manager.get_session_info()
+    
+    # Check if required files exist in session
+    if not session_manager.file_exists("jd_data.json"):
+        st.error("❌ Job descriptions data not found in your session.")
+        st.info("💡 Please go to **'Evaluate Candidates'** tab and process job requirements first.")
         return
     
-    if not os.path.exists("candidate_evaluation_data.json"):
-        st.error("❌ Candidate evaluation data not found. Please run candidate evaluation first.")
+    if not session_manager.file_exists("candidate_evaluation_data.json"):
+        st.error("❌ Candidate evaluation data not found in your session.")
+        st.info("💡 Please run candidate evaluation first in the **'Evaluate Candidates'** tab.")
         return
     
+    # Session status display
+    with st.expander("🔧 Session Status", expanded=False):
+        st.write(f"**Session ID:** `{session_info['session_id'][:8]}...`")
+        st.write(f"**Available Files:** {session_info['file_count']}")
+        
+        # Show file status
+        files_status = []
+        if session_manager.file_exists("jd_data.json"):
+            files_status.append("✅ Job Descriptions")
+        if session_manager.file_exists("candidate_evaluation_data.json"):
+            files_status.append("✅ Evaluation Results")
+        if session_manager.file_exists("interview_questions.json"):
+            files_status.append("✅ Interview Questions")
+        
+        for status in files_status:
+            st.write(status)
+    
+    # Generation button
     if st.button("🚀 Generate Interview Questions", type="primary"):
         try:
-            with open("jd_data.json", "r", encoding='utf-8') as jd_file:
-                job_description = json.load(jd_file)
-
-            with open("candidate_evaluation_data.json", "r", encoding='utf-8') as candidate_file:
-                candidate_evaluation_data = json.load(candidate_file)
+            # Load data from session
+            job_description = session_manager.load_json("jd_data.json")
+            candidate_evaluation_data = session_manager.load_json("candidate_evaluation_data.json")
+            
+            if not job_description:
+                st.error("❌ Failed to load job descriptions from session.")
+                return
+                
+            if not candidate_evaluation_data:
+                st.error("❌ Failed to load evaluation data from session.")
+                return
 
             if job_description and candidate_evaluation_data:
-                # Initialize agents and tasks
-                tasks = AIAgentTasks()
+                # Initialize agents and tasks with session manager
+                tasks = AIAgentTasks()  # Now uses session manager internally
                 agents = AIAgents()
                 
                 # Create Crew for generating interview questions
                 generate_interview_questions_agent = agents.generate_interview_questions()
                 generate_interview_questions_task = tasks.generate_interview_questions_task(
-                    generate_interview_questions_agent, 
-                    job_description, 
+                    generate_interview_questions_agent,
+                    job_description,
                     candidate_evaluation_data
                 )
                 
@@ -56,8 +88,7 @@ def interview_questions():
                     memory=True,
                     process=Process.sequential,
                     embedder=embedder,
-                    cache=True,
-                    llm_config=agents.llm_config
+                    cache=True
                 )
                 
                 # Generate interview questions
@@ -65,23 +96,45 @@ def interview_questions():
                     try:
                         result = asyncio.run(generate_question_crew.kickoff_async())
                         st.success("✅ Interview questions generated successfully!")
+                        logger.info(f"Interview questions generated for session {session_info['session_id'][:8]}")
+                        
+                        # CRITICAL FIX: Handle CrewAI output files
+                        moved_files = handle_crewai_output_files(session_manager, ["interview_questions.json"])
+                        if moved_files:
+                            st.write(f"📁 Moved interview questions to session: {moved_files}")
+                        else:
+                            # If no files were moved, check if file exists in working directory
+                            if os.path.exists("interview_questions.json"):
+                                st.warning("⚠️ Questions file found in working directory, attempting to move...")
+                                if session_manager.move_file_to_session("interview_questions.json"):
+                                    st.success("✅ Successfully moved questions file to session!")
+                                else:
+                                    st.error("❌ Failed to move questions file to session")
+                            else:
+                                st.warning("⚠️ Questions file not found in expected location")
+                        
                     except Exception as e:
                         st.error(f"❌ Error generating questions: {str(e)}")
+                        logger.error(f"Question generation error: {e}")
                         return
 
         except Exception as e:
             st.error(f"❌ Error reading input files: {str(e)}")
+            logger.error(f"File reading error: {e}")
             return
 
-    # Display generated questions if file exists
-    if os.path.exists("interview_questions.json"):
+    # Display generated questions if file exists in session
+    if session_manager.file_exists("interview_questions.json"):
         try:
             # Clean up JSON tags if needed
-            remove_json_tags("interview_questions.json")
+            remove_json_tags_session("interview_questions.json", session_manager)
             
-            with open("interview_questions.json", "r", encoding='utf-8') as file:
-                questions_data = json.load(file)
-                st.session_state.questions_data = questions_data
+            questions_data = session_manager.load_json("interview_questions.json")
+            if not questions_data:
+                st.error("❌ Failed to load interview questions from session.")
+                return
+                
+            st.session_state.questions_data = questions_data
 
             st.subheader("🧠 Generated Interview Questions")
             
@@ -122,14 +175,14 @@ def interview_questions():
                 
                 for candidate_data in candidates:
                     # Handle different possible field names
-                    candidate_name = (candidate_data.get("candidate") or 
-                                    candidate_data.get("name") or 
-                                    candidate_data.get("candidate_name") or 
+                    candidate_name = (candidate_data.get("candidate") or
+                                    candidate_data.get("name") or
+                                    candidate_data.get("candidate_name") or
                                     "Unknown Candidate")
                     
-                    role = (candidate_data.get("role") or 
-                           candidate_data.get("position") or 
-                           candidate_data.get("job_role") or 
+                    role = (candidate_data.get("role") or
+                           candidate_data.get("position") or
+                           candidate_data.get("job_role") or
                            "Unknown Role")
                     
                     questions = candidate_data.get("questions", [])
@@ -213,20 +266,21 @@ def interview_questions():
                     try:
                         combined_data = {
                             "interview_questions": questions_data,
+                            "session_id": session_info['session_id'],
                             "generated_at": pd.Timestamp.now().isoformat()
                         }
                         
                         # Add evaluation data if requested
-                        if include_evaluation and os.path.exists("candidate_evaluation_data.json"):
-                            with open("candidate_evaluation_data.json", "r", encoding='utf-8') as f:
-                                evaluation_data = json.load(f)
-                            combined_data["evaluation_results"] = evaluation_data
+                        if include_evaluation and session_manager.file_exists("candidate_evaluation_data.json"):
+                            evaluation_data = session_manager.load_json("candidate_evaluation_data.json")
+                            if evaluation_data:
+                                combined_data["evaluation_results"] = evaluation_data
                         
                         # Add job descriptions if requested
-                        if include_jobs and os.path.exists("jd_data.json"):
-                            with open("jd_data.json", "r", encoding='utf-8') as f:
-                                job_data = json.load(f)
-                            combined_data["job_descriptions"] = job_data
+                        if include_jobs and session_manager.file_exists("jd_data.json"):
+                            job_data = session_manager.load_json("jd_data.json")
+                            if job_data:
+                                combined_data["job_descriptions"] = job_data
                         
                         # Show status message
                         if include_evaluation or include_jobs:
@@ -236,35 +290,45 @@ def interview_questions():
                         
                         # Create download
                         combined_json = json.dumps(combined_data, indent=2)
+                        session_id_short = session_info['session_id'][:8]
+                        
                         st.download_button(
                             label="💾 Click to Download",
                             data=combined_json,
-                            file_name="interview_questions_package.json",
+                            file_name=f"interview_questions_{session_id_short}.json",
                             mime="application/json",
                             help="Download interview questions with selected additional data"
                         )
                         
+                        st.success("✅ Download ready!")
+                        logger.info(f"Download package created for session {session_id_short}")
+                        
                     except Exception as e:
                         st.error(f"❌ Error creating download package: {str(e)}")
+                        logger.error(f"Download error: {e}")
 
         except json.JSONDecodeError as e:
             st.error(f"❌ Error parsing interview questions JSON: {str(e)}")
+            logger.error(f"JSON decode error: {e}")
+            
+            # Show debug info
             st.write("Raw file contents (first 500 chars):")
             try:
-                with open("interview_questions.json", "r", encoding='utf-8') as f:
+                filepath = session_manager.get_file_path("interview_questions.json")
+                with open(filepath, "r", encoding='utf-8') as f:
                     raw_content = f.read()
                     st.text(raw_content[:500] + ("..." if len(raw_content) > 500 else ""))
             except Exception:
-                st.error("Could not read raw file")
+                st.error("Could not read raw file from session")
         
         except Exception as e:
             st.error(f"❌ Error loading interview questions: {str(e)}")
+            logger.error(f"General error: {e}")
             import traceback
             st.code(traceback.format_exc())
     
     else:
         st.info("📝 No interview questions generated yet. Click 'Generate Interview Questions' to create personalized questions for each candidate.")
-
 
 if __name__ == "__main__":
     interview_questions()
