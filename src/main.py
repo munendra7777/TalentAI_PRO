@@ -15,7 +15,7 @@ import bleach
 import json
 import os 
 import json
-from llm_config import get_gemini_api_key
+from llm_config import llm_config
 
 
 

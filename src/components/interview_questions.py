@@ -56,7 +56,8 @@ def interview_questions():
                     memory=True,
                     process=Process.sequential,
                     embedder=embedder,
-                    cache=True
+                    cache=True,
+                    llm_config=agents.llm_config
                 )
                 
                 # Generate interview questions

@@ -315,7 +315,8 @@ def evaluate_candidates_resume():
             memory=False,
             process=Process.sequential,
             embedder=embedder,
-            cache=False
+            cache=False,
+            llm_config=agents.llm_config
         )
         
         # Uncomment the following lines to process resumes
