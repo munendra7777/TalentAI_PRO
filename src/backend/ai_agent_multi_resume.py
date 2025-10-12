@@ -19,7 +19,7 @@ load_dotenv()
 
 #GEMINI_API_KEY = get_gemini_api_key()
 
-#GEMINI_API_KEY = st.secrets["credentials"]["GEMINI_API_KEY"]
+# GEMINI_API_KEY = st.secrets["credentials"]["GEMINI_API_KEY"]
 
 
 """
