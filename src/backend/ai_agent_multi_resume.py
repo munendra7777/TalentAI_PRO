@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 from crewai_tools import SerperDevTool, ScrapeWebsiteTool
 from backend.crew_tools import read_resume_data
 from llm_config import API_KEY, llm_config
-from main import llm_config
 from openai import OpenAI
 import streamlit as st
 
@@ -36,6 +35,10 @@ temperature=0.5,
 #     model="ollama/llama3:latest",
 #     base_url="http://localhost:11434"
 # )
+
+def get_llm_config():
+    from main import llm_config  # imported only when function is called
+    return llm_config
 
 
 #custom embedder for embeddings

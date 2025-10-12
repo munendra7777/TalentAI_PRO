@@ -1,14 +1,5 @@
-# __import__('pysqlite3')
-# import sys
-# sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-
+import page_config
 import streamlit as st
-
-st.set_page_config(
-    page_title="TalentAI PRO",  # Title of the app
-    page_icon="💼",  # You can use an emoji or a local file path
-    layout="wide",  # Layout of the app (centered or wide)
-    )
 # Import necessary libraries
 from crewai import LLM
 
