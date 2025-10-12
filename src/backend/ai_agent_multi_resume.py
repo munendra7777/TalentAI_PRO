@@ -22,20 +22,6 @@ load_dotenv()
 #GEMINI_API_KEY = st.secrets["credentials"]["GEMINI_API_KEY"]
 
 
-"""
-llm_config = LLM(
-#model="gemini/gemini-1.5-pro",
-<<<<<<< HEAD
-model="gemini/gemini-1.5-flash-8b",
-api_key=GEMINI_API_KEY,
-temperature=0.5,
-=======
-model="gemini/gemini-2.0-flash",
-temperature=0.5
->>>>>>> refs/remotes/origin/dev_branch
-)
-"""
-
 # llm_config = LLM(
 #     model="ollama/llama3:latest",
 #     base_url="http://localhost:11434"
