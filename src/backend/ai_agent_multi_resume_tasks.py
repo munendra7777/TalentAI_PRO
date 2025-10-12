@@ -2,7 +2,6 @@ from textwrap import dedent
 from crewai import Task
 from crewai_tools import FileReadTool, JSONSearchTool, FileWriterTool
 import json
-<<<<<<< HEAD
 import os
 from pydantic import BaseModel, Field
 from typing import List, Dict
@@ -18,13 +17,7 @@ def remove_old_files():
   print("Old files removed successfully.")
 
 # Remove old files if they exist
-remove_old_files()
-=======
-from pydantic import BaseModel
-from typing import List, Optional
-from components.pydantic_models import EvaluationResult, ResumeData
-
->>>>>>> refs/remotes/origin/dev_branch
+#remove_old_files()
 
 file_reader_tool = FileReadTool()
 file_writer_tool = FileWriterTool(overwrite=True)
@@ -297,18 +290,12 @@ class AIAgentTasks:
             agent=agent,
             allow_code_execution=True,
             code_execution_mode="safe",
-<<<<<<< HEAD
             output_pydantic=ResumeData,
             output_file="resumes_data.json",
             directory="./",
             overwrite=True,
             validate_json=validate_resume_data,
             max_retries=5
-=======
-            output_file="data/resumes_data.json",
-            max_retries=5,
-            output_pydantic = ResumeData
->>>>>>> refs/remotes/origin/dev_branch
         )
 
         return [resume_task, jd_task]
@@ -316,11 +303,7 @@ class AIAgentTasks:
     def evaluate_candidate_task(self, agent, resume_data, job_data):
       return Task(
       description=dedent(f"""
-<<<<<<< HEAD
       Evaluate the candidates based on the provided resume data in "resumes_data.json" against the job descriptions in "jd_data.json" from the "analyze_resume_task". Break the tasks in smaller sub tasks if needed and save the output in "candidate_evaluation_data.json".
-=======
-      Evaluate the candidates based on the provided resume data in "data/resumes_data.json" against the each job description from the "data/jd_data.json" from the "analyze_resume_task". Break the tasks into smaller sub-tasks if needed and append the output for each role in "data/candidate_evaluation_data.json".
->>>>>>> refs/remotes/origin/dev_branch
       
       **Evaluation Process:**
       - PROCESS EACH JOB ROLE SEPARATELY FOR ANALYSING THE CANDIDATES.
@@ -421,16 +404,10 @@ class AIAgentTasks:
       expected_output="A structured JSON output containing the detailed evaluation report of the candidates, including strengths, weaknesses, inconsistencies, and a final score for each job role.",
       agent=agent,
       code_execution_mode="safe",
-<<<<<<< HEAD
       output_file="candidate_evaluation_data.json",
       validate_json=validate_evaluation_data, 
       directory="./",
       overwrite=True,
-=======
-      #tools=[file_writer_tool],
-      output_file="data/candidate_evaluation_data.json",
-      output_pydantic = EvaluationResult
->>>>>>> refs/remotes/origin/dev_branch
       )
 
     def generate_interview_questions_task(self, agent, job_requirements, candidate_evaluation_data):

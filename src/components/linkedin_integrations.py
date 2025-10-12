@@ -9,17 +9,13 @@ from components.resume_upload_form import read_pdf, read_docx, display_file, rem
 # Load environment variables from .env file
 load_dotenv()
 
-<<<<<<< HEAD
 
 
 
-=======
->>>>>>> refs/remotes/origin/dev_branch
 
 def linkedin_integrations():
     st.header("LinkedIn Integrations")    
     if st.button("Find Candidates"):
-<<<<<<< HEAD
         # Read the job description data
         with open("jd_data.json", "r") as jd_file:
             job_requirements = json.load(jd_file)
@@ -27,13 +23,6 @@ def linkedin_integrations():
         with open("jd_data.json", "r") as jd_file:
             job_data = json.load(jd_file)
 
-=======
-        with open("data/jd_data.json", "r") as jd_file:
-            job_requirements = json.load(jd_file)
-
-        #if jd_file:
-            # Initialize agents and tasks
->>>>>>> refs/remotes/origin/dev_branch
         tasks = LinkedInAgentTasks()
         agents = AIAgents()
         

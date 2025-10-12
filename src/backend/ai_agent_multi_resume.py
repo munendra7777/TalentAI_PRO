@@ -25,14 +25,9 @@ load_dotenv()
 """
 llm_config = LLM(
 #model="gemini/gemini-1.5-pro",
-<<<<<<< HEAD
 model="gemini/gemini-1.5-flash-8b",
 api_key=GEMINI_API_KEY,
 temperature=0.5,
-=======
-model="gemini/gemini-2.0-flash",
-temperature=0.5
->>>>>>> refs/remotes/origin/dev_branch
 )
 """
 
