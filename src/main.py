@@ -44,7 +44,6 @@ from llm_config import get_gemini_api_key
 
 
 
-
 # Function to escape HTML characters
 def escape_html(input_text):
     return html.escape(input_text)

@@ -17,7 +17,7 @@ def linkedin_integrations():
         with open("jd_data.json", "r") as jd_file:
             job_requirements = json.load(jd_file)
         # Read the resume data
-        with open("resumes_data.json", "r") as jd_file:
+        with open("jd_data.json", "r") as jd_file:
             job_data = json.load(jd_file)
 
         tasks = LinkedInAgentTasks()

@@ -5,7 +5,21 @@ import json
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
 from components.pydantic_models import EvaluationResult, ResumeData
+import os
+from typing import List, Dict
+def remove_old_files():
+  if os.path.exists("./resumes_data.json"):
+      os.remove("./resumes_data.json")
+  if os.path.exists("./jd_data.json"):
+      os.remove("./jd_data.json")
+  if os.path.exists("./candidate_evaluation_data.json"):
+      os.remove("./candidate_evaluation_data.json")
+  if os.path.exists("./interview_questions.json"):
+      os.remove("./interview_questions.json")
+  print("Old files removed successfully.")
 
+# Remove old files if they exist
+remove_old_files()
 
 file_reader_tool = FileReadTool()
 file_writer_tool = FileWriterTool(overwrite=True)
