@@ -1,7 +1,6 @@
-#__import__('pysqlite3') needed only when used on streamlit cloud, otherwise it is not needed
+# __import__('pysqlite3')
+# import sys
 # sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-
-import sys
 
 import streamlit as st
 

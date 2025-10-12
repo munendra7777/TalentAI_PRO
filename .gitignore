@@ -1,6 +1,7 @@
 # git ignore
 *.env
 __pycache__/
+*__pycache__*
 *.json
 *.pyc
 ../.talent_ai_venv/

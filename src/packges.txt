@@ -1,2 +1,3 @@
 libsqlite3-dev
 google-generativeai
+sqlite3

@@ -34,8 +34,8 @@ generate_interview_questions_task = tasks.generate_interview_questions_task(gene
 generate_feedback_task = tasks.generate_feedback_task(collect_feedback_agent, job_description)
 generate_feedback_report_task = tasks.generate_feedback_report_task(collect_feedback_agent, feedback_data)
 candidate_researcher_task = tasks.candidate_researcher_task(candidate_researcher_agent, job_description)
-candidate_matcher_task = tasks.candidate_matcher_task(candidate_matcher_agent, "path/to/candidates_data.json", job_description)
-candidate_reporter_task = tasks.candidate_reporter_task(candidate_reporter_agent, "path/to/candidates_data.json")
+candidate_matcher_task = tasks.candidate_matcher_task(candidate_matcher_agent, "candidates_data.json", job_description)
+candidate_reporter_task = tasks.candidate_reporter_task(candidate_reporter_agent, "candidates_data.json")
 candidate_outreacher_task = tasks.candidate_outreacher_task(candidate_outreach_agent, job_description)
 
 # Create Crew responsible for Copy
@@ -92,7 +92,7 @@ resume_analysis = resume_crew.kickoff()
 
 # Read candidates data only if resume is processed
 if resume_text:
-    candidates_data = tasks.read_candidates_data("path/to/candidates_data.json")  # Provide the path to the JSON file
+    candidates_data = tasks.read_candidates_data("candidates_data.json")  # Provide the path to the JSON file
     candidate_research = candidate_researcher_crew.kickoff()
     interview_prep = interview_crew.kickoff()
 else:
