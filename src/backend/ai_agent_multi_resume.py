@@ -7,10 +7,14 @@ from dotenv import load_dotenv
 from crewai_tools import SerperDevTool, ScrapeWebsiteTool
 from backend.crew_tools import read_resume_data
 <<<<<<< HEAD
+<<<<<<< HEAD
 from llm_config import API_KEY, llm_config
 =======
 
 >>>>>>> 5e7751b (updated requirements)
+=======
+from main import llm_config
+>>>>>>> de5e7cc (updated)
 from openai import OpenAI
 import streamlit as st
 
@@ -21,11 +25,26 @@ load_dotenv()
 #GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # Check if the key is already set in session state
 
+<<<<<<< HEAD
 #GEMINI_API_KEY = get_gemini_api_key()
+=======
+#GEMINI_API_KEY = st.session_state["gemini_api_key"]
+>>>>>>> de5e7cc (updated)
 
 #GEMINI_API_KEY = st.secrets["credentials"]["GEMINI_API_KEY"]
 
 
+<<<<<<< HEAD
+=======
+"""
+llm_config = LLM(
+#model="gemini/gemini-1.5-pro",
+model="gemini/gemini-1.5-flash-8b",
+api_key=GEMINI_API_KEY,
+temperature=0.5,
+)
+"""
+>>>>>>> de5e7cc (updated)
 # llm_config = LLM(
 #     model="ollama/llama3:latest",
 #     base_url="http://localhost:11434"
