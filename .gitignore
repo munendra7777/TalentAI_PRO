@@ -10,3 +10,5 @@ src/components/__pycache__/
 src/data/
 src/.streamlit/secrets.toml
 new_venv/
+src/components/__pycache__/evaluate_candidates_resume.cpython-312.pyc
+src/components/__pycache__/interview_questions.cpython-312.pyc
