@@ -297,8 +297,8 @@ def evaluate_candidates_resume():
             return
         
         # Display the count of selected resumes and job descriptions
-        st.write(f"Selected {len(resumes)} resumes for evaluation.")
-        st.write(f"Selected {len(job_requirements)} job descriptions for evaluation.")
+        #st.write(f"Selected {len(resumes)} resumes for evaluation.")
+        #st.write(f"Selected {len(job_requirements)} job descriptions for evaluation.")
         
         # Initialize agents and tasks
         tasks = AIAgentTasks()
@@ -349,7 +349,7 @@ def evaluate_candidates_resume():
             if isinstance(job_requirements, dict):
                 job_requirements = [job_requirements]
 
-            st.write(f"🔍 Starting evaluation for {len(job_requirements)} job descriptions:")
+            #st.write(f"🔍 Starting evaluation for {len(job_requirements)} job descriptions:")
             
             # Show all job titles first for debugging
             for i, job in enumerate(job_requirements):
@@ -357,7 +357,7 @@ def evaluate_candidates_resume():
                     title = job.get('title', f'Job {i+1}')
                 else:
                     title = f'Job {i+1} (String format)'
-                st.write(f"  {i+1}. {title}")
+                #st.write(f"  {i+1}. {title}")
 
             for i, job_role in enumerate(job_requirements):
                 # Get job title with better error handling
@@ -368,13 +368,13 @@ def evaluate_candidates_resume():
                     
                 temp_file = os.path.join(tempfile.gettempdir(), f"eval_{role_title.replace(' ', '_').replace('/', '_')}.json")
                 
-                st.write(f"📋 Processing job role {i+1}/{len(job_requirements)}: **{role_title}**")
+                #st.write(f"📋 Processing job role {i+1}/{len(job_requirements)}: **{role_title}**")
 
                 try:
                     # Convert string job_role to dict format if needed
                     if isinstance(job_role, dict):
                         job_role_dict = job_role
-                        st.write(f"  ✅ Job data is properly formatted as dictionary")
+                        #st.write(f"  ✅ Job data is properly formatted as dictionary")
                     else:
                         job_role_dict = {'title': role_title, 'description': str(job_role)}
                         st.write(f"  ⚠️ Job data is string format, converted to dictionary")
@@ -400,11 +400,11 @@ def evaluate_candidates_resume():
                     )
                     
                     # Process this job role with detailed progress tracking
-                    with st.spinner(f"Evaluating candidates for {role_title}..."):
+                    with st.spinner(f"Evaluating candidates ..."):
                         try:
-                            st.write(f"  🚀 Starting crew execution for {role_title}")
+                            st.write(f"  🚀 Starting crew execution ...")
                             crew_result = asyncio.run(evaluation_crew.kickoff_async())
-                            st.write(f"  ✅ Crew execution completed for {role_title}")
+                            st.write(f"  ✅ Crew execution completed.")
                             
                             # Get the output directly from crew_result
                             task_output = evaluate_candidate_task.output
@@ -412,11 +412,11 @@ def evaluate_candidates_resume():
                             if task_output and task_output.pydantic:
                                 # If we got a Pydantic model directly
                                 result = task_output.pydantic
-                                st.write(f"  ✅ Got Pydantic model result for {role_title}")
+                                #st.write(f"  ✅ Got Pydantic model result for {role_title}")
                             else:
                                 # Parse from raw output if needed
                                 raw_output = task_output.raw if task_output else crew_result.tasks[0].output.raw
-                                st.write(f"  📝 Processing raw output for {role_title} (type: {type(raw_output)})")
+                                #st.write(f"  📝 Processing raw output for {role_title} (type: {type(raw_output)})")
                                 
                                 if isinstance(raw_output, str):
                                     if "```json" in raw_output:
@@ -425,7 +425,7 @@ def evaluate_candidates_resume():
                                         json_str = raw_output.strip()
                                     # Parse and validate with Pydantic
                                     result = EvaluationResult.model_validate_json(json_str)
-                                    st.write(f"  ✅ Successfully parsed JSON for {role_title}")
+                                    #st.write(f"  ✅ Successfully parsed JSON for {role_title}")
                                 else:
                                     st.error(f"  ❌ Unexpected output type for {role_title}: {type(raw_output)}")
                                     failed_jobs.append((role_title, f"Unexpected output type: {type(raw_output)}"))
@@ -433,16 +433,8 @@ def evaluate_candidates_resume():
                             
                             # Validate that we got results
                             if result and result.job_roles:
-                                st.write(f"  ✅ Got {len(result.job_roles)} job role results for {role_title}")
-                                
-                                # Save to temp file safely
-                                try:
-                                    with open(temp_file, 'w', encoding='utf-8') as f:
-                                        f.write(result.model_dump_json(indent=2))
-                                    temp_results.append(temp_file)
-                                    st.write(f"  💾 Saved temp results for {role_title}")
-                                except Exception as save_error:
-                                    st.error(f"  ❌ Failed to save temp file for {role_title}: {str(save_error)}")
+                                st.write(f"  ✅ Got {len(result.job_roles)} job role results ")
+                                temp_results.append(result)
 
                                 # Add to combined results
                                 all_evaluations.job_roles.extend(result.job_roles)
@@ -464,9 +456,9 @@ def evaluate_candidates_resume():
                     continue
 
             # Show summary of processing
-            st.write("📊 **Evaluation Summary:**")
-            st.write(f"  ✅ Successfully processed: {len(all_evaluations.job_roles)} job roles")
-            st.write(f"  ❌ Failed to process: {len(failed_jobs)} job roles")
+            #st.write("📊 **Evaluation Summary:**")
+            #st.write(f"  ✅ Successfully processed: {len(all_evaluations.job_roles)} job roles")
+            #st.write(f"  ❌ Failed to process: {len(failed_jobs)} job roles")
             
             if failed_jobs:
                 st.warning("⚠️ **Failed Job Descriptions:**")
@@ -482,14 +474,14 @@ def evaluate_candidates_resume():
                     st.success(f"🎉 **Evaluation completed!** Results saved for {len(all_evaluations.job_roles)} job roles.")
                     
                     # Show which job roles were successfully processed
-                    st.write("✅ **Successfully evaluated job roles:**")
+                    #st.write("✅ **Successfully evaluated job roles:**")
                     for job_role in all_evaluations.job_roles:
                         role_name = job_role.get('role_name', 'Unknown Role')
                         candidate_count = len(job_role.get('candidates', []))
-                        st.write(f"  - **{role_name}**: {candidate_count} candidates evaluated")
+                        #st.write(f"  - **{role_name}**: {candidate_count} candidates evaluated")
                         
                 except Exception as save_error:
-                    st.error(f"❌ Failed to save final evaluation results: {str(save_error)}")
+                    print(f"❌ Failed to save final evaluation results: {str(save_error)}")
             else:
                 st.error("❌ **No evaluation results were generated for any job descriptions!**")
                 
