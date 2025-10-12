@@ -15,3 +15,4 @@ src/components/__pycache__/evaluate_candidates_resume.cpython-312.pyc
 src/components/__pycache__/interview_questions.cpython-312.pyc
 *.json
 *.pyc   
+../.talent_ai_venv/

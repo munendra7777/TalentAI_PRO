@@ -10,7 +10,10 @@ st.set_page_config(
     layout="wide",  # Layout of the app (centered or wide)
     )
 # Import necessary libraries
+<<<<<<< HEAD
 from crewai import LLM
+=======
+>>>>>>> 73201c0 (updates)
 
 from streamlit_option_menu import option_menu
 #from components.resume_upload_form import resume_upload_form 
@@ -24,8 +27,11 @@ import bleach
 import json
 import os 
 import json
+<<<<<<< HEAD
 from llm_config import get_gemini_api_key
 
+=======
+>>>>>>> 73201c0 (updates)
 
 
 # Function to escape HTML characters
