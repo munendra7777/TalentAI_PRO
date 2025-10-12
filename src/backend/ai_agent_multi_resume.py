@@ -8,7 +8,7 @@ from crewai_tools import SerperDevTool, ScrapeWebsiteTool
 from backend.crew_tools import read_resume_data
 from llm_config import API_KEY, llm_config
 from openai import OpenAI
-import streamlit as st
+import streamlit as st  
 
 # Load environment variables from .env file
 load_dotenv()
@@ -36,9 +36,6 @@ temperature=0.5,
 #     base_url="http://localhost:11434"
 # )
 
-def get_llm_config():
-    from main import llm_config  # imported only when function is called
-    return llm_config
 
 
 #custom embedder for embeddings
