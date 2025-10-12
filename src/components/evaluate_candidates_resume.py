@@ -312,7 +312,7 @@ def evaluate_candidates_resume():
             agents=[analyze_resume_agent],
             tasks=analyse_resume_tasks,
             verbose=True,
-            memory=True,
+            memory=False,
             process=Process.sequential,
             embedder=embedder,
             cache=False
