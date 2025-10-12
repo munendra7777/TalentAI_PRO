@@ -308,8 +308,8 @@ def render_custom_footer(session_info=None):
     <div class="custom-footer">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
             <div>
-                <strong>🚀 TalentAI Pro</strong> © 2024 | 
-                <span style="color: #667eea;">The Ultimate Talent Acquisition Platform</span>
+                <span style="color: #6c759e;">🚀 <strong>TalentAI Pro<strong> © 2024 |</span>
+                <span style="color: #6c757d;">The Ultimate Talent Acquisition Platform</span>
             </div>
             <div style="font-size: 0.9rem; color: #6c757d;">
                 Session: <code>{session_id}...</code> | Files: {file_count} | 

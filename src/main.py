@@ -13,6 +13,7 @@ from llm_config import llm_config
 from session_manager import SessionManager
 from page_config import set_page_config, render_custom_header, render_navigation_status, render_custom_footer
 import logging
+from page_config import get_logo_base64
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -70,8 +71,14 @@ def main():
     # Enhanced sidebar with session management and navigation
     with st.sidebar:
         # App branding in sidebar
-        st.markdown("### 💼 TalentAI Pro")
-        st.markdown("*The Ultimate Talent Acquisition Platform*")
+        logo = get_logo_base64(logo_path)
+        #display in-line logo with a titile and a subheader
+        st.html(f'''<div style="text-align: center;">
+            <img src="data:image/png;base64,{logo}" alt="Logo" style="width: 50px; height: auto; margin-bottom: 8px;"/>
+            <h2 style="margin: 0;">{title_text}</h2>
+            <p style="font-size: 14px; color: gray; margin-top: 5px;">{sub_header}</p>
+            </div>''')
+
         st.divider()
         
         # Session management section

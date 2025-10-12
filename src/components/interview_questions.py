@@ -131,7 +131,7 @@ def interview_questions():
             
             questions_data = session_manager.load_json("interview_questions.json")
             if not questions_data:
-                st.error("❌ Failed to load interview questions from session.")
+                st.error("❌ Failed to load interview questions from session. Please try again!")
                 return
                 
             st.session_state.questions_data = questions_data
