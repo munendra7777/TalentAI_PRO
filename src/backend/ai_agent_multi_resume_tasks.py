@@ -290,7 +290,6 @@ class AIAgentTasks:
             expected_output="A structured JSON output containing the extracted information from the resumes, including skills, experience, education, certifications, and projects. Rewrite the output if the file is already present. The JSON should be a valid JSON object with the extracted details. Do not include \"```json\" and \"```\" tags in the output file. Please make sure that the extracted details are accurate and correct with no made-up data and formatting issues.",
             agent=agent,
             code_execution_mode="safe",
-            output_pydantic=ResumeData,
             output_file="resumes_data.json",
             overwrite=True,
             validate_json=validate_resume_data,
