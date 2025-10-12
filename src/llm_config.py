@@ -8,7 +8,7 @@ def get_gemini_api_key():
 
     # Try fetching from Streamlit secrets first
     try:
-        api_key = st.secrets["GEMINI"]["API_KEY"]
+        api_key = st.secrets["GEMINI_API_KEY"]
     except (KeyError, AttributeError, st.errors.StreamlitSecretNotFoundError):
         pass # If not found in secrets, try environment variables
 
