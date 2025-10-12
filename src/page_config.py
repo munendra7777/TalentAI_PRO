@@ -9,7 +9,7 @@ def set_page_config():
     # Set page config with custom favicon
     st.set_page_config(
         page_title="TalentAI Pro",
-        page_icon="💼",  # Business briefcase emoji as default
+        page_icon="./page-icon.png",  # Business briefcase emoji as default
         layout="wide",
         initial_sidebar_state="collapsed",
         menu_items={
