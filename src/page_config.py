@@ -11,7 +11,7 @@ def set_page_config():
         page_title="TalentAI Pro",
         page_icon="💼",  # Business briefcase emoji as default
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="collapsed",
         menu_items={
             'Get Help': 'https://github.com/munendra7777/TalentAI_PRO',
             'Report a bug': "https://github.com/munendra7777/TalentAI_PRO/issues",
