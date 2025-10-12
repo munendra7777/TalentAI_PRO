@@ -6,7 +6,11 @@ from textwrap import dedent
 from dotenv import load_dotenv
 from crewai_tools import SerperDevTool, ScrapeWebsiteTool
 from backend.crew_tools import read_resume_data
+<<<<<<< HEAD
 from llm_config import API_KEY, llm_config
+=======
+
+>>>>>>> 5e7751b (updated requirements)
 from openai import OpenAI
 import streamlit as st
 
