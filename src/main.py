@@ -1,12 +1,6 @@
-<<<<<<< HEAD
 # __import__('pysqlite3')
 # import sys
 # sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-=======
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
->>>>>>> aa678f1 (updated)
 
 import streamlit as st
 
@@ -16,14 +10,7 @@ st.set_page_config(
     layout="wide",  # Layout of the app (centered or wide)
     )
 # Import necessary libraries
-<<<<<<< HEAD
-<<<<<<< HEAD
 from crewai import LLM
-=======
->>>>>>> 73201c0 (updates)
-=======
-from crewai import LLM
-
 # Ask user for their API key
 GEMINI_API_KEY = st.text_input("Enter your GEMINI_API_KEY", type="password")
 
@@ -40,7 +27,6 @@ llm_config = LLM(
     temperature=0.5,
 )
 
->>>>>>> de5e7cc (updated)
 
 from streamlit_option_menu import option_menu
 #from components.resume_upload_form import resume_upload_form 
@@ -54,11 +40,8 @@ import bleach
 import json
 import os 
 import json
-<<<<<<< HEAD
 from llm_config import get_gemini_api_key
 
-=======
->>>>>>> 73201c0 (updates)
 
 
 # Function to escape HTML characters
@@ -90,7 +73,6 @@ sub_header_description = sanitize_input("""
 
 def main():
     st.markdown(f"<h1 style='text-align: center;'>{title_text}</h1>", unsafe_allow_html=True)
-
 
     # Sidebar navigation with icons
     with st.sidebar:
