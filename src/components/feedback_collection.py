@@ -13,4 +13,3 @@ def feedback_collection():
     # Embed Google Form after loading
     st.components.v1.iframe(GOOGLE_FORM_URL, height=2000)
 
-feedback_collection()
