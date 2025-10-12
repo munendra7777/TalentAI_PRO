@@ -74,6 +74,7 @@ sub_header_description = sanitize_input("""
 def main():
     st.markdown(f"<h1 style='text-align: center;'>{title_text}</h1>", unsafe_allow_html=True)
 
+
     # Sidebar navigation with icons
     with st.sidebar:
         page = option_menu(
