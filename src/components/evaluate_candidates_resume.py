@@ -740,13 +740,13 @@ def evaluate_candidates_resume():
                 # Case 1: Expected format {"resumes": [...]}
                 if "resumes" in resume_data and isinstance(resume_data["resumes"], list):
                     resumes = resume_data["resumes"]
-                    st.write(f"✅ Found standard format with 'resumes' key: {len(resumes)} items")
+                    #st.write(f"✅ Found standard format with 'resumes' key: {len(resumes)} items")
                 
                 # Case 2: Single resume object {"name": "John", "skills": {...}}
                 elif "name" in resume_data or "contact_details" in resume_data or "skills" in resume_data:
                     resumes = [resume_data]  # Wrap single resume in list
-                    st.write(f"✅ Found single resume object, converted to list: 1 item")
-                    st.write(f"✅ Resume name: {resume_data.get('name', 'Unknown')}")
+                    #st.write(f"✅ Found single resume object, converted to list: 1 item")
+                    #st.write(f"✅ Resume name: {resume_data.get('name', 'Unknown')}")
                 
                 # Case 3: Multiple resume objects as separate keys
                 else:
@@ -758,7 +758,7 @@ def evaluate_candidates_resume():
                     
                     if potential_resumes:
                         resumes = potential_resumes
-                        st.write(f"✅ Found resume objects as separate keys: {len(resumes)} items")
+                        #st.write(f"✅ Found resume objects as separate keys: {len(resumes)} items")
                     else:
                         st.warning("⚠️ Dict format not recognized as resume data")
                         
