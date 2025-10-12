@@ -17,7 +17,7 @@ import os
 import json
 from llm_config import llm_config
 
-
+logo_path = os.path.join(os.path.dirname(__file__), "./logo.png")
 
 # Function to escape HTML characters
 def escape_html(input_text):
@@ -69,7 +69,7 @@ def main():
         st.write("")
         col1, col2, col3 = st.columns([1,2,1])
         with col2:
-            st.image("logo.png", caption="TalentAI Pro", width=400)
+            st.image(logo_path, caption="TalentAI Pro", width=400)
 
         st.markdown("""
 ###### Why I Built this App? 
