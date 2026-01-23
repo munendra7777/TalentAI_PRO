@@ -8,7 +8,9 @@ from crewai_tools import SerperDevTool, ScrapeWebsiteTool
 from backend.crew_tools import read_resume_data
 from llm_config import API_KEY, llm_config
 from openai import OpenAI
-import streamlit as st  
+import streamlit as st
+from crewai.rag.core.base_embeddings_callable import EmbeddingFunction
+from groq import Groq
 
 # Load environment variables from .env file
 load_dotenv()
@@ -19,7 +21,7 @@ load_dotenv()
 
 #GEMINI_API_KEY = get_gemini_api_key()
 
-# GEMINI_API_KEY = st.secrets["credentials"]["GEMINI_API_KEY"]
+#GEMINI_API_KEY = st.secrets["credentials"]["GEMINI_API_KEY"]
 
 
 """
@@ -37,12 +39,35 @@ temperature=0.5,
 # )
 
 
-
 #custom embedder for embeddings
 #embedder=dict(provider="ollama", config=dict(model="nomic-embed-text"))
-embedder=dict(provider="google", config=dict(api_key=API_KEY, model="models/text-embedding-004"))
+#embedder=dict(provider="google", config=dict(api_key=API_KEY, model="models/text-embedding-004"))
 
+# for embeddings from groq
 
+class GroqEmbeddingFunction(EmbeddingFunction):
+    def __init__(self, api_key=None, model="sentence-transformers/all-MiniLM-L6-v2"):
+        self.client = Groq(api_key=api_key or os.getenv("GROQ_API_KEY"))
+        self.model = model
+    
+    def __call__(self, input):
+        # Handle both single string and list of strings
+        if isinstance(input, str):
+            input = [input]
+        
+        response = self.client.embeddings.create(
+            model=self.model,
+            input=input
+        )
+        return [item.embedding for item in response.data]
+
+# Use it as your embedder
+embedder = {
+    "provider": "custom",
+    "config": {
+        "embedding_callable": GroqEmbeddingFunction
+    }
+}
 
 
 class AIAgents:
