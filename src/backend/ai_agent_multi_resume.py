@@ -6,7 +6,7 @@ from textwrap import dedent
 from dotenv import load_dotenv
 from crewai_tools import SerperDevTool, ScrapeWebsiteTool
 from backend.crew_tools import read_resume_data
-from llm_config import API_KEY, llm_config
+from llm_config import llm_config
 from openai import OpenAI
 import streamlit as st
 from groq import Groq
