@@ -54,7 +54,7 @@ llm_config = None
 # Fall back to Groq if Gemini fails or no key
 if llm_config is None and GROQ_API_KEY:
     try:
-        llm_config = LLM(model="groq/llama-3.2-90b-text-preview", api_key=GROQ_API_KEY, temperature=0.5)
+        llm_config = LLM(model="groq/llama-3.1-8b-instant", api_key=GROQ_API_KEY, temperature=0.5)
     except Exception as e:
         st.warning(f"⚠️ Groq LLM failed: {e}")
 
