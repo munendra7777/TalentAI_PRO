@@ -2,6 +2,30 @@ import streamlit as st
 from crewai import LLM
 import os
 
+def get_huggingface_token():
+    """Retrieve the Hugging Face token from Streamlit secrets or environment variables."""
+    token = None
+
+    # Try fetching from Streamlit secrets first
+    try:
+        token = st.secrets["HF_TOKEN"]
+    except (KeyError, AttributeError, st.errors.StreamlitSecretNotFoundError):
+        pass
+
+    # If not found in secrets, check environment variables
+    if not token:
+        token = os.getenv("HF_TOKEN")
+    
+    # Take user input if not found in both
+    if not token:
+        token = st.text_input("Enter your Hugging Face Token", type="password")
+
+    # Handle missing token
+    if not token:
+        st.warning("⚠️ Hugging Face Token not found. Please check Streamlit secrets or environment variables.")
+    
+    return token
+
 def get_groq_api_key():
     api_key = None
     try:
@@ -15,8 +39,6 @@ def get_groq_api_key():
     if not api_key:
         st.warning("⚠️ GROQ API Key not found.")
     return api_key
-
-GROQ_API_KEY = get_groq_api_key()
 
 
 def get_gemini_api_key():
@@ -44,27 +66,11 @@ def get_gemini_api_key():
     
     return api_key
 
-API_KEY = get_gemini_api_key()
 
-# Stop execution if API key is missing
-# Configure LLM with fallback support
-llm_config = None
+hf_token = get_huggingface_token()
 
-# Try Gemini first
-if API_KEY:
-    try:
-        llm_config = LLM(model="gemini/gemini-2.0-flash", api_key=API_KEY, temperature=0.5)
-    except Exception as e:
-        st.warning(f"⚠️ Gemini LLM failed: {e}")
-
-# Fall back to Groq if Gemini fails or no key
-if llm_config is None and GROQ_API_KEY:
-    try:
-        llm_config = LLM(model="groq/llama-3.3-70b-versatile", api_key=GROQ_API_KEY, temperature=0.5)
-    except Exception as e:
-        st.warning(f"⚠️ Groq LLM failed: {e}")
-
-# Stop if neither works
-if llm_config is None:
-    st.error("❌ No LLM could be configured. Please provide a valid API key.")
-    st.stop()
+llm_config = LLM(
+    model="huggingface/meta-llama/Meta-Llama-3.1-8B-Instruct"
+)
+# Set HF_TOKEN in environment for the LLM to use
+os.environ["HF_TOKEN"] = hf_token
