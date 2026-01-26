@@ -44,18 +44,12 @@ def get_gemini_api_key():
     
     return api_key
 
-API_KEY = get_gemini_api_key()
+#API_KEY = get_gemini_api_key()
 
 # Stop execution if API key is missing
 # Configure LLM with fallback support
 llm_config = None
 
-# Try Gemini first
-if API_KEY:
-    try:
-        llm_config = LLM(model="gemini/gemini-2.0-flash", api_key=API_KEY, temperature=0.5)
-    except Exception as e:
-        st.warning(f"⚠️ Gemini LLM failed: {e}")
 
 # Fall back to Groq if Gemini fails or no key
 if llm_config is None and GROQ_API_KEY:
